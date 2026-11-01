@@ -39,7 +39,7 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _versionCache;
     private readonly TextBox _unknownGroup;
     private readonly TextBox _systemGroup;
-    private readonly ListView _ruleList;
+    private readonly ThemedListView _ruleList;
     private bool _suppressRuleEvents;
 
     private readonly NumericUpDown _memoryRetention;
@@ -138,17 +138,11 @@ internal sealed class SettingsForm : Form
         _logMaxKb = Num(64, 10240, 64, _working.LogMaxKilobytes);
 
         // ---------- 布局 ----------
-        var tabs = new TabControl
+        var tabs = new ThemedTabControl(_theme)
         {
             Dock = DockStyle.Fill,
-            Appearance = TabAppearance.Normal,
-            SizeMode = TabSizeMode.Fixed,
-            ItemSize = new Size(Scaled(92), Scaled(28)),
-            Padding = new Point(Scaled(12), Scaled(6)),
-            DrawMode = TabDrawMode.OwnerDrawFixed,
             Font = _theme.UiFont,
         };
-        tabs.DrawItem += OnDrawTab;
 
         var samplingPage = new TabPage("采样") { BackColor = _theme.Background };
         var sampling = CreateContent(samplingPage);
@@ -247,6 +241,11 @@ internal sealed class SettingsForm : Form
         AddWideControl(diagnostics, pathHint, Scaled(52));
         tabs.TabPages.Add(diagnosticsPage);
 
+        if (UiDebug.SettingsTabIndex >= 0 && UiDebug.SettingsTabIndex < tabs.TabPages.Count)
+        {
+            tabs.SelectedIndex = UiDebug.SettingsTabIndex;
+        }
+
         var actions = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -284,14 +283,14 @@ internal sealed class SettingsForm : Form
 
     private Size Scaled(int width, int height) => new(Scaled(width), Scaled(height));
 
-    private NumericUpDown Num(decimal minimum, decimal maximum, decimal step, decimal value) => new()
+    private NumericUpDown Num(decimal minimum, decimal maximum, decimal step, decimal value) => new ThemedNumericUpDown(_theme)
     {
         Minimum = minimum,
         Maximum = maximum,
         Increment = step,
         Value = Math.Clamp(value, minimum, maximum),
         Width = Scaled(140),
-        ThousandsSeparator = false,
+        Height = Scaled(26),
     };
 
     private static CheckBox Check(string text, bool value) => new()
@@ -317,29 +316,6 @@ internal sealed class SettingsForm : Form
         combo.Items.AddRange(items);
         combo.SelectedIndex = Math.Clamp(index, 0, items.Length - 1);
         return combo;
-    }
-
-    private void OnDrawTab(object? sender, DrawItemEventArgs e)
-    {
-        if (sender is not TabControl tabs || e.Index < 0 || e.Index >= tabs.TabPages.Count)
-        {
-            return;
-        }
-
-        bool selected = tabs.SelectedIndex == e.Index;
-        var page = tabs.TabPages[e.Index];
-        using (var background = new SolidBrush(selected ? _theme.SurfaceAlt : _theme.Background))
-        {
-            e.Graphics.FillRectangle(background, e.Bounds);
-        }
-
-        TextRenderer.DrawText(
-            e.Graphics,
-            page.Text,
-            selected ? _theme.UiBoldFont : _theme.UiFont,
-            e.Bounds,
-            selected ? _theme.Accent : _theme.TextSecondary,
-            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
     }
 
     private TableLayoutPanel CreateContent(TabPage page)
@@ -415,22 +391,19 @@ internal sealed class SettingsForm : Form
         panel.SetColumnSpan(control, 2);
     }
 
-    private ListView BuildRuleList()
+    private ThemedListView BuildRuleList()
     {
-        var list = new ListView
+        var list = new ThemedListView(_theme)
         {
-            View = View.Details,
-            FullRowSelect = true,
             CheckBoxes = true,
-            MultiSelect = false,
-            HideSelection = false,
-            HeaderStyle = ColumnHeaderStyle.Nonclickable,
             Font = _theme.SmallFont,
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
         };
-        list.Columns.Add("启用", Scaled(48));
-        list.Columns.Add("匹配方式", Scaled(128));
-        list.Columns.Add("模式", Scaled(180));
-        list.Columns.Add("动作", Scaled(128));
+        list.Columns.Add("启用", Scaled(62));
+        list.Columns.Add("匹配方式", Scaled(100));
+        list.Columns.Add("模式", Scaled(200));
+        list.Columns.Add("动作", Scaled(100));
         list.Columns.Add("目标", Scaled(150));
         list.ItemChecked += OnRuleItemChecked;
         list.DoubleClick += (_, _) => EditRule();
@@ -464,6 +437,8 @@ internal sealed class SettingsForm : Form
         buttons.Controls.Add(RuleButton("上移", (_, _) => MoveRule(-1)));
         buttons.Controls.Add(RuleButton("下移", (_, _) => MoveRule(1)));
 
+        _ruleList.Dock = DockStyle.Fill;
+        _ruleList.Margin = Padding.Empty;
         layout.Controls.Add(_ruleList, 0, 0);
         layout.Controls.Add(buttons, 1, 0);
         return layout;
@@ -510,6 +485,7 @@ internal sealed class SettingsForm : Form
             }
 
             _ruleList.EndUpdate();
+            _ruleList.FitColumnsToClient();
             if (_ruleList.Items.Count > 0)
             {
                 int index = Math.Clamp(selectedIndex, 0, _ruleList.Items.Count - 1);

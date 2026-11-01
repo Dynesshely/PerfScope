@@ -54,16 +54,20 @@ internal static class AppIcon
         return icon;
     }
 
-    /// <summary>给窗体设置图标（已有则不覆盖）。</summary>
+    /// <summary>
+    /// 给窗体设置图标。
+    /// 注意：WinForms 窗体的 <see cref="Form.Icon"/> 默认就返回应用程序图标（非 null），
+    /// 所以不能靠「null 才设置」判断，否则永远设不上——必须直接赋值。
+    /// </summary>
     public static void Apply(Form form)
     {
-        if (form.Icon is not null)
+        var icon = Get(32);
+        if (icon is null)
         {
             return;
         }
 
-        var icon = Get(32);
-        if (icon is not null)
+        if (!ReferenceEquals(form.Icon, icon))
         {
             form.Icon = icon;
         }

@@ -12,4 +12,10 @@ internal static class UiDebug
 
     /// <summary>启动后是否自动打开「接入 Agent」窗口（仅截图 / 自动化验证用）。</summary>
     public static bool OpenAgentOnStart { get; set; }
+
+    /// <summary>启动后是否自动打开设置窗口（仅截图 / 自动化验证用）。</summary>
+    public static bool OpenSettingsOnStart { get; set; }
+
+    /// <summary>打开设置窗口时默认选中的标签页索引（-1 表示不指定）。</summary>
+    public static int SettingsTabIndex { get; set; } = -1;
 }

@@ -22,6 +22,8 @@ internal static class Program
         bool isMock = HasFlag(args, "--mock");
         Infrastructure.UiDebug.HoverDemo = HasFlag(args, "--hover-demo");
         Infrastructure.UiDebug.OpenAgentOnStart = HasFlag(args, "--open-agent");
+        Infrastructure.UiDebug.OpenSettingsOnStart = HasFlag(args, "--open-settings");
+        Infrastructure.UiDebug.SettingsTabIndex = ParseIntArgument(args, "--settings-tab", -1);
 
         ApplicationConfiguration.Initialize();
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -77,6 +79,21 @@ internal static class Program
                 return;
             }
         }
+    }
+
+    /// <summary>解析 <c>--name 123</c> 形式的整数参数，缺省时返回 <paramref name="fallback"/>。</summary>
+    private static int ParseIntArgument(string[] args, string name, int fallback)
+    {
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase) &&
+                int.TryParse(args[i + 1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int value))
+            {
+                return value;
+            }
+        }
+
+        return fallback;
     }
 
     private static bool HasFlag(string[] args, string flag)

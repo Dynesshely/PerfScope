@@ -12,7 +12,7 @@ internal sealed class HistoryForm : Form
     private readonly Theme _theme;
     private readonly float _scale;
     private readonly ComboBox _dayBox;
-    private readonly ListView _list;
+    private readonly ThemedListView _list;
     private readonly Label _summaryLabel;
     private IReadOnlyList<DateOnly> _days = Array.Empty<DateOnly>();
     private bool _disposed;
@@ -65,16 +65,10 @@ internal sealed class HistoryForm : Form
         refreshButton.Margin = new Padding(Scaled(8), 0, 0, 0);
         topBar.Controls.Add(refreshButton);
 
-        _list = new ListView
+        _list = new ThemedListView(_theme)
         {
             Dock = DockStyle.Fill,
-            View = View.Details,
-            FullRowSelect = true,
-            GridLines = false,
-            MultiSelect = false,
-            HideSelection = false,
             Font = _theme.SmallFont,
-            BorderStyle = BorderStyle.FixedSingle,
         };
         _list.Columns.Add("应用", Scaled(240));
         _list.Columns.Add("CPU 时间（秒）", Scaled(120), HorizontalAlignment.Right);

@@ -158,6 +158,12 @@ internal sealed class MainForm : Form
             // 仅用于截图 / 自动化验证：启动后自动打开「接入 Agent」窗口
             BeginInvoke(new Action(OpenAgentHandoff));
         }
+
+        if (UiDebug.OpenSettingsOnStart)
+        {
+            // 仅用于截图 / 自动化验证：启动后自动打开设置窗口
+            BeginInvoke(new Action(OpenSettings));
+        }
     }
 
     /// <summary>按保存的界面状态恢复左右分栏比例与树图可见性。</summary>
