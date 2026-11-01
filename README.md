@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo.svg" width="104" height="104" alt="PerfScope" />
+<img src="docs/logo.png" width="104" height="104" alt="PerfScope" />
 
 # PerfScope
 
