@@ -55,7 +55,7 @@ internal sealed class AppListControl : Control
     private SolidBrush _cpuBarBrush;
     private SolidBrush _memoryBarBrush;
     private SolidBrush _chevronBrush;
-    private Pen _chevronPen;
+    private Font? _chevronFont;
     private Pen _gridPen;
     private Pen _headerBorderPen;
     private Pen _sparkPen;
@@ -105,7 +105,6 @@ internal sealed class AppListControl : Control
         _cpuBarBrush = new SolidBrush(Theme.WithAlpha(theme.Accent, 200));
         _memoryBarBrush = new SolidBrush(Theme.WithAlpha(theme.MemoryLine, 200));
         _chevronBrush = new SolidBrush(theme.TextSecondary);
-        _chevronPen = new Pen(theme.TextSecondary, Math.Max(1f, Dp(1) * 1.2f));
         _gridPen = new Pen(theme.GridLine);
         _headerBorderPen = new Pen(theme.Border);
         _sparkPen = new Pen(theme.Accent, Math.Max(1.1f, Dp(2) * 0.6f))
@@ -212,7 +211,6 @@ internal sealed class AppListControl : Control
         _cpuBarBrush = new SolidBrush(Theme.WithAlpha(theme.Accent, 200));
         _memoryBarBrush = new SolidBrush(Theme.WithAlpha(theme.MemoryLine, 200));
         _chevronBrush = new SolidBrush(theme.TextSecondary);
-        _chevronPen = new Pen(theme.TextSecondary, Math.Max(1f, Dp(1) * 1.2f));
         _gridPen = new Pen(theme.GridLine);
         _headerBorderPen = new Pen(theme.Border);
         _sparkPen = new Pen(theme.Accent, Math.Max(1.1f, Dp(2) * 0.6f))
@@ -234,10 +232,11 @@ internal sealed class AppListControl : Control
         _cpuBarBrush.Dispose();
         _memoryBarBrush.Dispose();
         _chevronBrush.Dispose();
-        _chevronPen.Dispose();
         _gridPen.Dispose();
         _headerBorderPen.Dispose();
         _sparkPen.Dispose();
+        _chevronFont?.Dispose();
+        _chevronFont = null;
     }
 
     private void RebuildRows()
@@ -527,7 +526,7 @@ internal sealed class AppListControl : Control
 
         int chevronX = indent + Dp(4);
         int centerY = rowRect.Y + rowRect.Height / 2;
-        DrawChevron(graphics, chevronX, centerY, expanded);
+        DrawChevron(graphics, chevronX + Dp(7), centerY, expanded);
 
         int iconX = chevronX + Dp(12);
         var icon = _icons.GetIcon(app.IconSourcePath ?? app.RootPath, app.DisplayName, iconSize);
@@ -678,22 +677,22 @@ internal sealed class AppListControl : Control
         SparklineRenderer.Draw(graphics, bounds, points.AsSpan(0, ring.Count), _sparkBuffer, _sparkPen, null);
     }
 
-    private void DrawChevron(Graphics graphics, int x, int centerY, bool expanded)
+    /// <summary>
+    /// 展开 / 折叠箭头：用系统图标字体（Segoe Fluent Icons / MDL2 Assets）绘制字形，
+    /// 比手绘折线在任意 DPI 下更锐利，也不再需要单独的画笔资源。
+    /// </summary>
+    private void DrawChevron(Graphics graphics, int centerX, int centerY, bool expanded)
     {
-        int size = Dp(3);
-        var previous = graphics.SmoothingMode;
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        graphics.DrawLine(_chevronPen, x, centerY - size, x + size * 2, centerY);
-        if (expanded)
-        {
-            graphics.DrawLine(_chevronPen, x + size * 2, centerY, x, centerY + size);
-        }
-        else
-        {
-            graphics.DrawLine(_chevronPen, x, centerY + size, x + size * 2, centerY);
-        }
-
-        graphics.SmoothingMode = previous;
+        _chevronFont ??= IconFont.Create(8f * (DeviceDpi / 96f));
+        int box = Dp(14);
+        var rect = new Rectangle(centerX - box / 2, centerY - box / 2, box, box);
+        TextRenderer.DrawText(
+            graphics,
+            expanded ? IconFont.ChevronDown : IconFont.ChevronRight,
+            _chevronFont,
+            rect,
+            _theme.TextMuted,
+            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
     }
 
     /// <inheritdoc />

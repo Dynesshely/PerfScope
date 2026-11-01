@@ -549,7 +549,145 @@ internal sealed class AppTreemapControl : Control
         }
 
         bool neutral = block.Key is "__free__" or "__idle_cpu__" or "__unattributed__";
-        if (block.Key is "__free__" or "__idle_cpu__" && rect.Width > Dp(8) && rect.Height > Dp(8))
+        DrawTexture(graphics, block, rect);
+
+        if (hovered)
+        {
+            using var pen = new Pen(_theme.Accent, Math.Max(1.5f, Dp(2)));
+            graphics.DrawRectangle(pen, rect.X, rect.Y, Math.Max(0, rect.Width - 1), Math.Max(0, rect.Height - 1));
+        }
+
+        int pad = Dp(7);
+        int innerWidth = Math.Max(0, (int)rect.Width - pad * 2);
+        int innerHeight = Math.Max(0, (int)rect.Height - pad * 2);
+        if (innerWidth < Dp(6) || innerHeight < Dp(6))
+        {
+            return;
+        }
+
+        // 图标：按块大小分档（同一档位内复用缓存，不会因为每次绘制重新解码）
+        int iconSize = rect.Width >= Dp(150) && rect.Height >= Dp(90)
+            ? Dp(26)
+            : rect.Width >= Dp(90)
+                ? Dp(20)
+                : Dp(16);
+        Image? icon = neutral || block.IconPath is not { Length: > 0 }
+            ? null
+            : _icons.GetIcon(block.IconPath, block.Name, iconSize);
+
+        // 文字全部按实测高度排版，上下各留 pad，彻底避免底部被裁
+        const TextFormatFlags flags = TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
+        var nameSize = TextRenderer.MeasureText(graphics, block.Name, _theme.UiBoldFont, new Size(innerWidth, int.MaxValue), flags);
+        var valueSize = TextRenderer.MeasureText(graphics, block.ValueText, _theme.SmallFont, new Size(innerWidth, int.MaxValue), flags);
+        int gap = Dp(2);
+        int textHeight = nameSize.Height + gap + valueSize.Height;
+
+        bool textWidthOk = innerWidth >= Dp(30);
+        bool textHeightOk = innerHeight >= textHeight;
+        bool textFits = textWidthOk && textHeightOk;
+        bool iconFits = icon is not null && innerWidth >= iconSize && innerHeight >= iconSize;
+
+        // 图标与文字同时出现时，图标放在文字下方、靠右下角；只有剩余高度真的够才画，避免压字
+        bool iconBesideText = textFits && icon is not null
+            && innerHeight >= textHeight + gap + iconSize
+            && innerWidth >= iconSize;
+
+        if (textFits && (icon is null || iconBesideText))
+        {
+            DrawBlockText(graphics, block, rect, pad, innerWidth, nameSize, valueSize, gap);
+            if (iconBesideText)
+            {
+                DrawBlockIcon(graphics, icon!, rect, iconSize);
+            }
+
+            return;
+        }
+
+        // 文字放不下（或加了图标就会遮挡）时：整块只显示图标
+        if (icon is not null)
+        {
+            // 块够大就按档位画，太小的话把图标缩到块内居中，保证一定能看见
+            int fit = Math.Min(Math.Min(iconSize, innerWidth), innerHeight);
+            if (fit < Dp(10))
+            {
+                fit = Math.Max(Dp(6), Math.Min(innerWidth, innerHeight));
+            }
+
+            var box = new Rectangle(
+                (int)rect.X + (int)(rect.Width - fit) / 2,
+                (int)rect.Y + (int)(rect.Height - fit) / 2,
+                fit,
+                fit);
+            graphics.DrawImage(icon, box);
+            return;
+        }
+
+        // 没有图标、文字又放不下：能放名称就只放名称，否则留空
+        if (textWidthOk && innerHeight >= nameSize.Height)
+        {
+            TextRenderer.DrawText(
+                graphics,
+                block.Name,
+                _theme.UiBoldFont,
+                new Rectangle((int)rect.X + pad, (int)rect.Y + pad, innerWidth, nameSize.Height),
+                _theme.IsDark ? Color.FromArgb(238, 242, 248) : Color.FromArgb(28, 32, 38),
+                flags | TextFormatFlags.EndEllipsis | TextFormatFlags.Left);
+        }
+    }
+
+    /// <summary>名称 + 数值两行文字，按实测高度排版并带上下留白。</summary>
+    private void DrawBlockText(
+        Graphics graphics,
+        Block block,
+        RectangleF rect,
+        int pad,
+        int innerWidth,
+        Size nameSize,
+        Size valueSize,
+        int gap)
+    {
+        var textColor = _theme.IsDark ? Color.FromArgb(238, 242, 248) : Color.FromArgb(28, 32, 38);
+        var valueColor = _theme.IsDark ? Color.FromArgb(205, 214, 226) : Color.FromArgb(58, 64, 74);
+        const TextFormatFlags flags = TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding | TextFormatFlags.Left | TextFormatFlags.EndEllipsis;
+
+        int top = (int)rect.Y + pad;
+        TextRenderer.DrawText(
+            graphics,
+            block.Name,
+            _theme.UiBoldFont,
+            new Rectangle((int)rect.X + pad, top, innerWidth, nameSize.Height),
+            textColor,
+            flags);
+
+        TextRenderer.DrawText(
+            graphics,
+            block.ValueText,
+            _theme.SmallFont,
+            new Rectangle((int)rect.X + pad, top + nameSize.Height + gap, innerWidth, valueSize.Height),
+            valueColor,
+            flags);
+    }
+
+    private void DrawBlockIcon(Graphics graphics, Image icon, RectangleF rect, int iconSize)
+    {
+        int pad = Dp(7);
+        var box = new Rectangle(
+            (int)rect.Right - pad - iconSize,
+            (int)rect.Bottom - pad - iconSize,
+            iconSize,
+            iconSize);
+        graphics.DrawImage(icon, box);
+    }
+
+    /// <summary>空闲 / 未归属块的特殊纹理，用来和普通应用块区分。</summary>
+    private void DrawTexture(Graphics graphics, Block block, RectangleF rect)
+    {
+        if (rect.Width <= Dp(8) || rect.Height <= Dp(8))
+        {
+            return;
+        }
+
+        if (block.Key is "__free__" or "__idle_cpu__")
         {
             var state = graphics.Save();
             graphics.SetClip(rect);
@@ -564,9 +702,10 @@ internal sealed class AppTreemapControl : Control
             }
 
             graphics.Restore(state);
+            return;
         }
 
-        if (block.Key == "__unattributed__" && rect.Width > Dp(8) && rect.Height > Dp(8))
+        if (block.Key == "__unattributed__")
         {
             var state = graphics.Save();
             graphics.SetClip(rect);
@@ -579,72 +718,6 @@ internal sealed class AppTreemapControl : Control
 
             graphics.Restore(state);
         }
-
-        if (hovered)
-        {
-            using var pen = new Pen(_theme.Accent, Math.Max(1.5f, Dp(2)));
-            graphics.DrawRectangle(pen, rect.X, rect.Y, Math.Max(0, rect.Width - 1), Math.Max(0, rect.Height - 1));
-        }
-
-        if (rect.Width < Dp(46) || rect.Height < Dp(24))
-        {
-            return;
-        }
-
-        var textColor = _theme.IsDark ? Color.FromArgb(238, 242, 248) : Color.FromArgb(28, 32, 38);
-        int padding = Dp(6);
-        int textLeft = (int)rect.X + padding;
-
-        // 应用图标画在方块右下角：不占文字位置，也不影响名称可读性
-        if (!neutral && block.IconPath is { Length: > 0 })
-        {
-            int iconSize = rect.Width >= Dp(120) && rect.Height >= Dp(64) ? Dp(20) : Dp(16);
-            if (rect.Width >= iconSize + padding * 2 && rect.Height >= iconSize + padding * 2)
-            {
-                var icon = _icons.GetIcon(block.IconPath, block.Name, iconSize);
-                if (icon is not null)
-                {
-                    graphics.DrawImage(
-                        icon,
-                        new Rectangle(
-                            (int)rect.Right - padding - iconSize,
-                            (int)rect.Bottom - padding - iconSize,
-                            iconSize,
-                            iconSize));
-                }
-            }
-        }
-
-        var nameRect = new Rectangle(
-            textLeft,
-            (int)rect.Y + padding,
-            Math.Max(0, (int)rect.Right - padding - textLeft),
-            Dp(16));
-        TextRenderer.DrawText(
-            graphics,
-            block.Name,
-            _theme.UiBoldFont,
-            nameRect,
-            textColor,
-            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
-
-        if (rect.Height < Dp(44))
-        {
-            return;
-        }
-
-        var valueRect = new Rectangle(
-            (int)rect.X + padding,
-            (int)rect.Y + padding + Dp(16),
-            Math.Max(0, (int)rect.Width - padding * 2),
-            Dp(15));
-        TextRenderer.DrawText(
-            graphics,
-            block.ValueText,
-            _theme.SmallFont,
-            valueRect,
-            _theme.IsDark ? Color.FromArgb(205, 214, 226) : Color.FromArgb(58, 64, 74),
-            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
     }
 
     /// <inheritdoc />
