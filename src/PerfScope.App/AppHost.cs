@@ -269,8 +269,8 @@ internal sealed class AppHost : IDisposable
     /// <summary>分析数据目录（report.md / report.json 所在位置）。</summary>
     public string AnalysisDirectory => Path.Combine(AppPaths.DataDirectory, "analysis");
 
-    /// <summary>立即生成一份今天的分析报告（Markdown + JSON），返回 markdown 路径。</summary>
-    public string? WriteAnalysisReport()
+    /// <summary>构建今天的分析报告对象（不落盘）。</summary>
+    public InsightReport? BuildReport()
     {
         if (_demo || _insights is null)
         {
@@ -279,17 +279,72 @@ internal sealed class AppHost : IDisposable
 
         try
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
-            var report = ReportBuilder.Build(today, History, _insights);
-            var (markdownPath, jsonPath) = ReportBuilder.Write(report, AppPaths.DataDirectory);
-            SafeLog(LogLevel.Info, "分析报告已更新：" + markdownPath + " / " + jsonPath);
-            return markdownPath;
+            return ReportBuilder.Build(DateOnly.FromDateTime(DateTime.Now), History, _insights);
         }
         catch (Exception ex)
         {
             SafeLog(LogLevel.Warn, "生成分析报告失败", ex);
             return null;
         }
+    }
+
+    /// <summary>立即生成一份今天的分析报告（Markdown + JSON），返回 markdown 路径。</summary>
+    public string? WriteAnalysisReport()
+    {
+        var report = BuildReport();
+        if (report is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var (markdownPath, jsonPath) = ReportBuilder.Write(report, AppPaths.DataDirectory);
+            SafeLog(LogLevel.Info, "分析报告已更新：" + markdownPath + " / " + jsonPath);
+            return markdownPath;
+        }
+        catch (Exception ex)
+        {
+            SafeLog(LogLevel.Warn, "写入分析报告失败", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 生成「接入 Agent」用的 Prompt：刷新今天的报告后，把真实路径、数据口径与已算好的结论一并写进去。
+    /// </summary>
+    public string BuildAgentPrompt()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var report = BuildReport();
+        if (report is not null)
+        {
+            try
+            {
+                ReportBuilder.Write(report, AppPaths.DataDirectory);
+            }
+            catch (Exception ex)
+            {
+                SafeLog(LogLevel.Warn, "写入分析报告失败", ex);
+            }
+        }
+
+        string suffix = today.ToString("yyyy-MM-dd");
+        var events = report?.Events ?? Array.Empty<InsightEvent>();
+        var context = new AgentPromptContext(
+            today,
+            Path.Combine(AnalysisDirectory, suffix + "-report.json"),
+            Path.Combine(AnalysisDirectory, suffix + "-report.md"),
+            Path.Combine(AppPaths.DataDirectory, "insights", suffix + ".jsonl"),
+            AnalysisDirectory,
+            report?.Apps.Count ?? 0,
+            events.Count,
+            events.Count(e => e.Kind == InsightKinds.Digest),
+            report?.System.SampleIntervalSeconds ?? 0,
+            (report?.System.TotalPhysicalMb ?? 0) / 1024.0,
+            report?.Findings ?? Array.Empty<string>());
+
+        return AgentPromptBuilder.Build(context);
     }
 
     /// <summary>写日志（不让日志自身异常影响主流程）。</summary>

@@ -9,4 +9,7 @@ internal static class UiDebug
 {
     /// <summary>是否强制显示悬停态。</summary>
     public static bool HoverDemo { get; set; }
+
+    /// <summary>启动后是否自动打开「接入 Agent」窗口（仅截图 / 自动化验证用）。</summary>
+    public static bool OpenAgentOnStart { get; set; }
 }

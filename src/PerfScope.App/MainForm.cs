@@ -152,6 +152,12 @@ internal sealed class MainForm : Form
     {
         base.OnShown(e);
         ApplySplitState();
+
+        if (UiDebug.OpenAgentOnStart)
+        {
+            // 仅用于截图 / 自动化验证：启动后自动打开「接入 Agent」窗口
+            BeginInvoke(new Action(OpenAgentHandoff));
+        }
     }
 
     /// <summary>按保存的界面状态恢复左右分栏比例与树图可见性。</summary>
@@ -259,6 +265,20 @@ internal sealed class MainForm : Form
         form.ShowDialog(this);
     }
 
+    /// <summary>打开「接入 Agent」窗口（复制可交给 AI 的 Prompt）。</summary>
+    private void OpenAgentHandoff()
+    {
+        try
+        {
+            using var form = new AgentHandoffForm(_host);
+            form.ShowDialog(this);
+        }
+        catch (Exception ex)
+        {
+            _host.SafeLog(LogLevel.Warn, "打开接入 Agent 窗口失败", ex);
+        }
+    }
+
     /// <summary>生成分析报告并打开所在目录。</summary>
     private void OpenAnalysis()
     {
@@ -351,6 +371,14 @@ internal sealed class MainForm : Form
         };
         analysisButton.Click += (_, _) => OpenAnalysis();
         toolbar.Items.Add(analysisButton);
+
+        var agentButton = new ToolStripButton("接入 Agent")
+        {
+            DisplayStyle = ToolStripItemDisplayStyle.Text,
+            ToolTipText = "复制一段已填好真实路径与结论的 Prompt，交给你的 AI 分析",
+        };
+        agentButton.Click += (_, _) => OpenAgentHandoff();
+        toolbar.Items.Add(agentButton);
 
         _treemapButton = new ToolStripButton("分布视图")
         {

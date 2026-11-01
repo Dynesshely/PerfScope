@@ -42,6 +42,11 @@ internal static class Program
             return RunBenchmark(options);
         }
 
+        if (options.AgentPrompt)
+        {
+            return RunAgentPrompt(options);
+        }
+
         if (options.Report)
         {
             return RunReport(options);
@@ -181,6 +186,36 @@ internal static class Program
         }
 
         return completed ? 0 : 3;
+    }
+
+    /// <summary>打印「接入 Agent」用的 Prompt（含真实路径与自动结论）。</summary>
+    private static int RunAgentPrompt(CliOptions options)
+    {
+        var dataDir = options.DataDirectory ?? AppPaths.DataDirectory;
+        var settings = new SettingsStore(NullLog.Instance, Path.Combine(dataDir, "settings.json")).Load();
+        using var history = new HistoryStore(settings, NullLog.Instance, Path.Combine(dataDir, "history"));
+        using var insights = new InsightStore(dataDir, NullLog.Instance);
+
+        var day = options.HistoryDay ?? DateOnly.FromDateTime(DateTime.Now);
+        var report = ReportBuilder.Build(day, history, insights);
+        ReportBuilder.Write(report, dataDir);
+
+        string suffix = day.ToString("yyyy-MM-dd");
+        var context = new AgentPromptContext(
+            day,
+            Path.Combine(dataDir, "analysis", suffix + "-report.json"),
+            Path.Combine(dataDir, "analysis", suffix + "-report.md"),
+            Path.Combine(dataDir, "insights", suffix + ".jsonl"),
+            Path.Combine(dataDir, "analysis"),
+            report.Apps.Count,
+            report.Events.Count,
+            report.Events.Count(e => e.Kind == InsightKinds.Digest),
+            report.System.SampleIntervalSeconds,
+            report.System.TotalPhysicalMb / 1024.0,
+            report.Findings);
+
+        Console.WriteLine(AgentPromptBuilder.Build(context));
+        return 0;
     }
 
     /// <summary>生成 / 打印某天的分析报告（AI 可直接消费）。</summary>
@@ -375,6 +410,8 @@ internal sealed class CliOptions
 
     public bool Report { get; private set; }
 
+    public bool AgentPrompt { get; private set; }
+
     public DateOnly? HistoryDay { get; private set; }
 
     public int BenchmarkRounds { get; private set; } = 10;
@@ -405,6 +442,9 @@ internal sealed class CliOptions
                     break;
                 case "--report":
                     options.Report = true;
+                    break;
+                case "--agent-prompt":
+                    options.AgentPrompt = true;
                     break;
                 case "--history":
                     options.History = true;
@@ -452,6 +492,7 @@ internal sealed class CliOptions
         Console.WriteLine("  --data-dir <目录>   使用独立数据目录（不影响正式配置）");
         Console.WriteLine("  --processes         列出原始采集到的进程（排查归并 / 可见性）");
         Console.WriteLine("  --report            生成当日分析报告（Markdown + JSON），--json 输出 JSON");
+        Console.WriteLine("  --agent-prompt      打印可直接交给 AI Agent 的分析 Prompt");
         Console.WriteLine("  --history           读取 --data-dir 下的历史，打印当日应用用量排行");
         Console.WriteLine("  --day <yyyy-MM-dd>  指定历史日期（默认最近一天）");
     }

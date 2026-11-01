@@ -13,7 +13,9 @@ public sealed record ReportSystem(
     double MemoryAvgPercent,
     double MemoryPeakPercent,
     double MinAvailableMb,
-    int Samples);
+    int Samples,
+    double SampleIntervalSeconds,
+    double TotalPhysicalMb);
 
 /// <summary>报告里的单应用汇总（来自磁盘分钟聚合）。</summary>
 public sealed record ReportApp(
@@ -88,13 +90,31 @@ public static class ReportBuilder
             samples += count;
         }
 
+        var session = events.FirstOrDefault(e => e.Kind == InsightKinds.SessionStart);
+        double intervalSeconds = 0;
+        double totalPhysicalMb = 0;
+        if (session?.Metrics is not null)
+        {
+            if (session.Metrics.TryGetValue("sampleIntervalSeconds", out var interval))
+            {
+                intervalSeconds = interval;
+            }
+
+            if (session.Metrics.TryGetValue("totalPhysicalMb", out var physical))
+            {
+                totalPhysicalMb = physical;
+            }
+        }
+
         var system = new ReportSystem(
             samples > 0 ? Math.Round(cpuSum / samples, 2) : 0,
             Math.Round(cpuPeak, 2),
             samples > 0 ? Math.Round(memSum / samples, 2) : 0,
             Math.Round(memPeak, 2),
             minAvailable == double.MaxValue ? 0 : Math.Round(minAvailable, 1),
-            samples);
+            samples,
+            Math.Round(intervalSeconds, 2),
+            Math.Round(totalPhysicalMb, 1));
 
         var findings = BuildFindings(apps, events, system);
         return new InsightReport(SchemaVersion, day, DateTime.UtcNow, system, apps, events, findings);
@@ -121,6 +141,15 @@ public static class ReportBuilder
             : "—";
         builder.AppendLine("| 可用内存最低 | " + availableText + " |");
         builder.AppendLine("| 采样帧数 | " + report.System.Samples + " |");
+        if (report.System.SampleIntervalSeconds > 0)
+        {
+            builder.AppendLine("| 采样间隔 | " + report.System.SampleIntervalSeconds.ToString("F1") + " 秒 |");
+        }
+
+        if (report.System.TotalPhysicalMb > 0)
+        {
+            builder.AppendLine("| 物理内存 | " + (report.System.TotalPhysicalMb / 1024.0).ToString("F1") + " GB |");
+        }
         builder.AppendLine();
 
         builder.AppendLine("## 二、应用排行（按 CPU 时间）");
