@@ -12,13 +12,18 @@
   Get-Process PerfScope -ErrorAction SilentlyContinue | Stop-Process -Force
   ~~~
 
-- 启动必须用便携数据目录，避免污染 `%LOCALAPPDATA%`，并用 WMI 分离启动（避免 GUI 子进程占住调用方的标准输出）：
+- **必须用 `scripts\run-dev.ps1` 启动**（它会构建、把产物镜像到工作区外、再用 WMI 分离启动）：
 
   ~~~powershell
-  $exe = "<repo>\src\PerfScope.App\bin\Debug\net10.0-windows\PerfScope.exe"
-  $data = "<repo>\artifacts\dev-run"
-  Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ('"' + $exe + '" --data-dir "' + $data + '"') }
+  .\scripts\run-dev.ps1            # 构建 + 启动
+  .\scripts\run-dev.ps1 -NoBuild   # 只重启
   ~~~
+
+  原因（实测结论）：DSH 的 Windows 沙箱按「进程映像所在路径」生效——只要 exe 在工作区内，
+  这个进程看到的进程表就被过滤（本机：工作区内 205 个进程 vs 工作区外 930 个），并且写
+  `%LOCALAPPDATA%` 也会被拒绝。脚本把 Debug 产物镜像到 `%LOCALAPPDATA%\PerfScope-dev\bin` 再启动，
+  就能拿到完整数据；数据目录仍指向仓库的 `artifacts\dev-run`。
+  脚本结束时会打印「进程可见性」，正常应显示数百个进程；如果只是 200 上下，说明镜像没生效。
 
 - 验收实例**不要**加 `--selftest`（那会让它到点自动退出）。
 - 启动后必须确认：进程存活、`MainWindowTitle` 为 `PerfScope — 应用级 CPU / 内存监控`、数据目录下没有 `logs\crash.log`。
@@ -39,11 +44,12 @@
 
 ## 环境注意事项
 
-- 受限会话里，由工具直接启动的进程只能看到被过滤的进程表（例如 167 / 840），`NtQuerySystemInformation`
-  返回的表也偏小；这是环境限制，不是程序缺陷。需要对照时可用 `dotnet run` 启动的子进程验证。
-- `%LOCALAPPDATA%` 在受限会话可能不可写，所以验收实例一律用 `--data-dir` 便携目录。
+- **沙箱是按「进程映像路径」生效的**：exe 在工作区内 → 进程表被过滤、`%LOCALAPPDATA%` 写入被拒；
+  exe 在工作区外（`%LOCALAPPDATA%` / `%TEMP%` 等）→ 完全正常。这就是必须用 `run-dev.ps1` 的原因。
+  判断方法：用同一份二进制分别放在工作区内、外各跑一次 `PerfScope.Cli --processes`，进程数差别很大。
 - 截图脚本 `scripts/capture-window.cs` 内置 Per-Monitor V2 DPI 感知；去掉它的话，在 150% 缩放下
   `GetWindowRect` 会返回虚拟化坐标，只能截到窗口左上角。
+- 需要截「悬停态」时可给应用加 `--hover-demo`（强制显示坐标轴与数值卡片，仅用于截图/自测）。
 
 ## 代码约定
 

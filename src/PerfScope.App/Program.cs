@@ -19,6 +19,7 @@ internal static class Program
 
         int selfTestSeconds = ParseSecondsArgument(args, "--selftest");
         _isDemo = HasFlag(args, "--demo");
+        Infrastructure.UiDebug.HoverDemo = HasFlag(args, "--hover-demo");
 
         ApplicationConfiguration.Initialize();
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);

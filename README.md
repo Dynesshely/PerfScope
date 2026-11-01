@@ -139,6 +139,10 @@ PerfScope 是一个 Windows 桌面小工具，目标很明确：
 
 ## 开发说明
 
+- 启动 dev 版：`.\scripts\run-dev.ps1`（构建 → 镜像到 %LOCALAPPDATA%\PerfScope-dev → 启动）。
+  之所以要先镜像到工作区外：本机的 Windows 沙箱按"进程映像所在路径"生效，exe 在工作区内时
+  进程表会被过滤（实测 205 vs 930 个进程）、也写不了 %LOCALAPPDATA%，镜像出去才能拿到完整数据。
+
 - 目标框架：.NET 10（net10.0-windows），SDK 由 global.json 固定为 10.0.402。
 - 零第三方 NuGet 依赖（Core/App）；测试项目用 xunit。
 - 本机 **dotnet test 不可用**（VSTest testhost 启动时需要打开父进程句柄，被环境拒绝），

@@ -221,12 +221,29 @@ internal sealed class AppTreemapControl : Control
         long attributed = entries.Sum(e => (long)e.Weight);
         _attributedBytes = attributed;
 
-        // 系统「在用」里总有一部分无法归属到任何进程（内核、驱动、文件缓存、压缩内存、共享页等）。
-        long used = Math.Max(_usedBytes, attributed);
-        long remainder = used - attributed;
-        if (remainder > Math.Max(256L << 20, used / 50))
+        long used = Math.Max(0, _usedBytes);
+
+        // 各进程的「工作集」会重复计算共享页，几百个进程时总和可能超过物理内存。
+        // 这时把应用块按 used/attributed 等比缩小：彼此的比例不变，面积口径回到「在用内存」。
+        if (attributed > used && attributed > 0 && used > 0)
         {
-            entries.Add(new Entry("__unattributed__", "未归属（内核 / 缓存 / 共享）", remainder, FormatUtil.Bytes(remainder), 0, 0, null, EntryKind.Unattributed));
+            double factor = (double)used / attributed;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Kind == EntryKind.Application)
+                {
+                    entries[i] = entries[i] with { Weight = entries[i].Weight * factor };
+                }
+            }
+        }
+        else
+        {
+            // 系统「在用」里总有一部分无法归属到任何进程（内核、驱动、文件缓存、压缩内存、共享页等）。
+            long remainder = used - attributed;
+            if (remainder > Math.Max(256L << 20, used / 50))
+            {
+                entries.Add(new Entry("__unattributed__", "未归属（内核 / 缓存 / 共享）", remainder, FormatUtil.Bytes(remainder), 0, 0, null, EntryKind.Unattributed));
+            }
         }
 
         // 空闲物理内存也按比例画出来，让整张图的面积等于物理内存总量。
@@ -266,9 +283,14 @@ internal sealed class AppTreemapControl : Control
                 EntryKind.Application));
         }
 
-        // 不画「空闲 CPU」：CPU 分布要看的是「谁在占」，空闲占去 80~90% 的面积反而让应用块看不清；
-        // 整机空闲多少在顶部指标卡和本视图右上角文案里已经有了。
-        _ = total;
+        // 补一块「空闲」：让整张图的面积口径等于 100%，
+        // 空闲很大时应用块会变小，但"还有多少余量"一眼可见（可用工具栏切换回内存分布看细节）。
+        double idle = 100.0 - total;
+        if (idle > 0.5)
+        {
+            entries.Add(new Entry("__idle_cpu__", "空闲 CPU", idle, FormatUtil.Percent(idle), 0, 0, null, EntryKind.Free));
+        }
+
         return entries;
     }
 
@@ -459,6 +481,19 @@ internal sealed class AppTreemapControl : Control
             DrawBlock(graphics, _blocks[i], i == _hovered);
         }
 
+        if (_hovered < 0 && UiDebug.HoverDemo)
+        {
+            for (int i = 0; i < _blocks.Count; i++)
+            {
+                if (_blocks[i].Key is not ("__free__" or "__idle_cpu__" or "__unattributed__"))
+                {
+                    _hovered = i;
+                    _hoverPoint = new Point((int)_blocks[i].Bounds.Left + (int)_blocks[i].Bounds.Width / 2, (int)_blocks[i].Bounds.Top + (int)_blocks[i].Bounds.Height / 2);
+                    break;
+                }
+            }
+        }
+
         if (_hovered >= 0 && _hovered < _blocks.Count)
         {
             DrawHoverCard(graphics, _blocks[_hovered]);
@@ -476,17 +511,19 @@ internal sealed class AppTreemapControl : Control
         string caption;
         if (_metric == TreemapMetric.Memory)
         {
-            long used = Math.Max(_usedBytes, _attributedBytes);
+            long used = Math.Max(0, _usedBytes);
             long free = _physicalBytes > used ? _physicalBytes - used : 0;
-            caption = _attributedBytes > 0 && used > _attributedBytes
-                ? "已归属 " + TrimUnit(_attributedBytes) + " / 在用 " + TrimUnit(used)
-                  + (free > 0 ? " / 空闲 " + FormatUtil.Bytes(free) : string.Empty)
-                : "共 " + FormatUtil.Bytes((long)_totalWeight) + " · 面积 = 内存";
+            caption = _physicalBytes > 0
+                ? "在用 " + TrimUnit(used) + " / 空闲 " + TrimUnit(free) + " / 共 " + FormatUtil.Bytes(_physicalBytes) + " · 面积 = 内存"
+                : "已归属 " + FormatUtil.Bytes(_attributedBytes) + " · 面积 = 内存";
         }
         else
         {
-            double appTotal = _blocks.Sum(b => b.Weight);
-            caption = "应用合计 " + FormatUtil.Percent(appTotal) + "（其余为空闲）";
+            double appTotal = _blocks.Where(b => b.Key != "__idle_cpu__").Sum(b => b.Weight);
+            double idlePart = _blocks.Where(b => b.Key == "__idle_cpu__").Sum(b => b.Weight);
+            caption = idlePart > 0
+                ? "应用合计 " + FormatUtil.Percent(appTotal) + " / 空闲 " + FormatUtil.Percent(idlePart)
+                : "应用合计 " + FormatUtil.Percent(appTotal);
         }
 
         if (string.IsNullOrEmpty(caption))
