@@ -31,6 +31,11 @@ internal static class Program
             return 0;
         }
 
+        if (options.ListProcesses)
+        {
+            return RunListProcesses(options);
+        }
+
         if (options.Benchmark)
         {
             return RunBenchmark(options);
@@ -42,6 +47,22 @@ internal static class Program
         }
 
         return RunFrames(options);
+    }
+
+    /// <summary>列出原始采集结果（排查归并 / 可见性问题用）。</summary>
+    private static int RunListProcesses(CliOptions options)
+    {
+        using var capture = new NativeCapture();
+        var sample = capture.Capture();
+        Console.WriteLine($"采集到 {sample.Processes.Length} 个进程（逻辑核心 {sample.LogicalProcessorCount}）");
+        Console.WriteLine($"{"PID",7}  {"内存MB",9}  {"CPU秒",9}  映像名 / 路径");
+        foreach (var process in sample.Processes.OrderByDescending(p => p.WorkingSetBytes).Take(options.Top))
+        {
+            Console.WriteLine($"{process.Pid,7}  {ToMb(process.WorkingSetBytes),9:F1}  {process.CpuTimeTicks / 10_000_000.0,9:F1}  " +
+                              $"{process.ImageName}  {process.ExecutablePath}");
+        }
+
+        return 0;
     }
 
     private static int RunFrames(CliOptions options)
@@ -307,6 +328,8 @@ internal sealed class CliOptions
 
     public bool History { get; private set; }
 
+    public bool ListProcesses { get; private set; }
+
     public DateOnly? HistoryDay { get; private set; }
 
     public int BenchmarkRounds { get; private set; } = 10;
@@ -331,6 +354,9 @@ internal sealed class CliOptions
                     break;
                 case "--top":
                     options.Top = Math.Clamp(ReadInt(args, ref i, 12), 1, 200);
+                    break;
+                case "--processes":
+                    options.ListProcesses = true;
                     break;
                 case "--history":
                     options.History = true;
@@ -376,6 +402,7 @@ internal sealed class CliOptions
         Console.WriteLine("  --bench             只测 NativeCapture 采集耗时");
         Console.WriteLine("  --rounds <N>        性能测试轮数（默认 10）");
         Console.WriteLine("  --data-dir <目录>   使用独立数据目录（不影响正式配置）");
+        Console.WriteLine("  --processes         列出原始采集到的进程（排查归并 / 可见性）");
         Console.WriteLine("  --history           读取 --data-dir 下的历史，打印当日应用用量排行");
         Console.WriteLine("  --day <yyyy-MM-dd>  指定历史日期（默认最近一天）");
     }

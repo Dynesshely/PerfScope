@@ -19,7 +19,7 @@ internal sealed class MainForm : Form
     private readonly TableLayoutPanel _layout;
     private readonly SystemHeaderControl _header;
     private readonly AppListControl _list;
-    private readonly AppTreemapControl _treemap;
+    private readonly DistributionView _distribution;
     private readonly SplitGripContainer _split;
     private ToolStripButton _treemapButton = null!;
     private readonly ToolStrip _toolbar;
@@ -83,7 +83,7 @@ internal sealed class MainForm : Form
             Margin = Padding.Empty,
         };
 
-        _treemap = new AppTreemapControl(_theme)
+        _distribution = new DistributionView(_theme, _icons)
         {
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
@@ -95,7 +95,7 @@ internal sealed class MainForm : Form
             Margin = Padding.Empty,
         };
         _split.Panel1.Controls.Add(_list);
-        _split.Panel2.Controls.Add(_treemap);
+        _split.Panel2.Controls.Add(_distribution);
 
         _toolbar = BuildToolbar(out _pauseButton);
         _status = BuildStatusBar(out _intervalLabel, out _frameLabel, out _selfLabel, out _processLabel);
@@ -163,6 +163,7 @@ internal sealed class MainForm : Form
             bool visible = _uiState.TreemapVisible;
             _treemapButton.Checked = visible;
             _split.Panel2Collapsed = !visible;
+            _distribution.SelectedIndex = _uiState.DistributionTab;
             if (!visible || _split.Width <= 0)
             {
                 return;
@@ -321,7 +322,7 @@ internal sealed class MainForm : Form
         historyButton.Click += (_, _) => OpenHistory();
         toolbar.Items.Add(historyButton);
 
-        _treemapButton = new ToolStripButton("内存分布")
+        _treemapButton = new ToolStripButton("分布视图")
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
             CheckOnClick = true,
@@ -411,7 +412,8 @@ internal sealed class MainForm : Form
     {
         _list.TopN = settings.TopN;
         _list.MemoryMode = settings.MemoryMode;
-        _list.SetFilter(app => settings.ShowSystemProcesses || app.Kind != AppKind.SystemProcess);
+        _list.SetFilter(app => settings.ShowSystemProcesses ||
+                                (app.Kind != AppKind.SystemProcess && app.Kind != AppKind.SystemModule));
         _list.RefreshRows();
     }
 
@@ -464,6 +466,7 @@ internal sealed class MainForm : Form
                 SortDescending = _list.SortDescending,
                 HiddenToTray = !Visible,
                 TreemapVisible = !_split.Panel2Collapsed,
+                DistributionTab = _distribution.SelectedIndex,
                 SplitRatio = _split.Panel2Collapsed || _split.Width <= 0
                     ? _uiState.SplitRatio
                     : Math.Clamp(
@@ -551,9 +554,9 @@ internal sealed class MainForm : Form
             _list.SetPhysicalMemory(frame.TotalPhysicalBytes);
             _list.SetApps(frame.Apps ?? Array.Empty<AppSample>());
 
-            _treemap.SetPhysicalMemory(frame.TotalPhysicalBytes);
-            _treemap.SetUsedMemory(frame.TotalPhysicalBytes - frame.AvailablePhysicalBytes);
-            _treemap.SetApps(frame.Apps ?? Array.Empty<AppSample>());
+            _distribution.SetPhysicalMemory(frame.TotalPhysicalBytes);
+            _distribution.SetUsedMemory(frame.TotalPhysicalBytes - frame.AvailablePhysicalBytes);
+            _distribution.SetApps(frame.Apps ?? Array.Empty<AppSample>());
         }
 
         UpdateStatusText(frame);
@@ -666,7 +669,7 @@ internal sealed class MainForm : Form
         _status.Font = _theme.SmallFont;
         _header.SetTheme(_theme);
         _list.SetTheme(_theme);
-        _treemap.SetTheme(_theme);
+        _distribution.SetTheme(_theme);
         _split.SetTheme(_theme);
         _layout.RowStyles[1].Height = Scaled(148);
 

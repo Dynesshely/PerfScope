@@ -100,7 +100,7 @@ internal sealed class SettingsForm : Form
         _groupByProduct = Check("按版本信息里的产品名归并", _working.GroupByProductName);
         _groupByInstallRoot = Check("按安装根目录归并", _working.GroupByInstallRoot);
         _inheritParent = Check("子进程继承父进程的应用归属", _working.InheritParentGroup);
-        _mergeSystem = Check("把 Windows 系统进程合并为一组", _working.MergeWindowsSystemProcesses);
+        _mergeSystem = Check("把系统进程合并为功能模块（WSL / 图形 / 安全 / 内核…）", _working.MergeWindowsSystemProcesses);
         _versionCache = Check("缓存 exe 版本信息与目录解析结果", _working.UseVersionInfoCache);
         _unknownGroup = Input(_working.UnknownGroupName);
         _systemGroup = Input(_working.SystemGroupName);
@@ -116,7 +116,7 @@ internal sealed class SettingsForm : Form
         _runAtStartup = Check("开机自动启动（写入当前用户注册表）", _working.RunAtStartup);
         _closeBehavior = Combo(CloseBehaviorTexts, (int)_working.CloseBehavior);
         _showSelfUsage = Check("在状态栏显示监控器自身开销", _working.ShowSelfUsage);
-        _showSystemGroups = Check("在列表中显示 Windows 系统进程组", _working.ShowSystemProcesses);
+        _showSystemGroups = Check("在列表中显示系统模块与系统进程组", _working.ShowSystemProcesses);
         _themeBox = Combo(ThemeTexts, string.Equals(_working.Theme, "light", StringComparison.OrdinalIgnoreCase) ? 1 : 0);
 
         _enableAlerts = Check("启用阈值气泡告警", _working.EnableAlerts);
@@ -187,7 +187,7 @@ internal sealed class SettingsForm : Form
         AddSectionTitle(ui, "主窗口");
         AddRow(ui, "列表显示行数", _topN);
         AddRow(ui, "显示自身开销", _showSelfUsage);
-        AddRow(ui, "显示系统进程组", _showSystemGroups);
+        AddRow(ui, "显示系统模块组", _showSystemGroups);
         AddRow(ui, "主题", _themeBox);
         AddSectionTitle(ui, "启动与关闭");
         AddRow(ui, "启动最小化", _startMinimized);

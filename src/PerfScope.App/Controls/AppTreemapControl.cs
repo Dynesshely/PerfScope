@@ -4,10 +4,20 @@ using PerfScope.Core.Models;
 
 namespace PerfScope.App.Controls;
 
+/// <summary>树图度量的口径。</summary>
+internal enum TreemapMetric
+{
+    /// <summary>面积 = 应用占用的内存。</summary>
+    Memory = 0,
+
+    /// <summary>面积 = 应用的 CPU 占用百分比。</summary>
+    Cpu = 1,
+}
+
 /// <summary>
-/// 内存树图（Treemap / 矩形树图，SpaceSniffer 用的就是这一类可视化）：
-/// 每个应用一个矩形，**面积正比于它当前占用的内存**，方块越大表示占用越多。
-/// 布局采用 squarified treemap（平方化）算法，尽量让方块接近正方形，便于辨认和比较。
+/// 分布树图（Treemap / 矩形树图，SpaceSniffer 用的就是这一类可视化）：
+/// 每个应用一个矩形，**面积正比于该应用的度量值**（内存或 CPU），方块越大占用越多。
+/// 布局采用 squarified treemap（平方化）算法；大方块里会画应用图标，方便一眼认出是谁。
 /// </summary>
 internal sealed class AppTreemapControl : Control
 {
@@ -15,36 +25,37 @@ internal sealed class AppTreemapControl : Control
         RectangleF Bounds,
         string Key,
         string Name,
-        long Bytes,
+        string ValueText,
+        double Weight,
         double CpuPercent,
         int ProcessCount,
-        Color Fill);
+        Color Fill,
+        string? IconPath);
 
     private readonly List<Block> _blocks = new();
-    private readonly ToolTip _tooltip = new()
-    {
-        InitialDelay = 250,
-        ReshowDelay = 120,
-        AutoPopDelay = 8000,
-    };
-
+    private readonly IconProvider _icons;
+    private readonly TreemapMetric _metric;
     private Theme _theme;
     private AppSample[] _apps = Array.Empty<AppSample>();
     private long _physicalBytes;
     private long _usedBytes;
     private long _attributedBytes;
-    private long _totalBytes;
+    private double _totalWeight;
     private int _hovered = -1;
+    private Point _hoverPoint;
 
     /// <summary>创建树图控件。</summary>
-    public AppTreemapControl(Theme theme)
+    public AppTreemapControl(Theme theme, TreemapMetric metric, IconProvider icons)
     {
         _theme = theme;
+        _metric = metric;
+        _icons = icons;
         SetStyle(
             ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
             ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,
             true);
         BackColor = theme.Surface;
+        ForeColor = theme.TextPrimary;
     }
 
     /// <summary>切换主题。</summary>
@@ -57,11 +68,12 @@ internal sealed class AppTreemapControl : Control
 
         _theme = theme;
         BackColor = theme.Surface;
+        ForeColor = theme.TextPrimary;
         Rebuild();
         Invalidate();
     }
 
-    /// <summary>推入一帧的应用数据（按内存生成方块）。</summary>
+    /// <summary>推入一帧的应用数据。</summary>
     public void SetApps(IReadOnlyList<AppSample> apps)
     {
         _apps = apps as AppSample[] ?? apps.ToArray();
@@ -69,13 +81,13 @@ internal sealed class AppTreemapControl : Control
         Invalidate();
     }
 
-    /// <summary>物理内存总量，用于顶部文案。</summary>
+    /// <summary>物理内存总量（内存口径用）。</summary>
     public void SetPhysicalMemory(long totalBytes)
     {
         _physicalBytes = totalBytes;
     }
 
-    /// <summary>系统「在用」物理内存：用于算出无法归属到任何应用的那部分。</summary>
+    /// <summary>系统「在用」物理内存（内存口径用）。</summary>
     public void SetUsedMemory(long usedBytes)
     {
         _usedBytes = Math.Max(0, usedBytes);
@@ -95,57 +107,31 @@ internal sealed class AppTreemapControl : Control
     private void Rebuild()
     {
         _blocks.Clear();
-        _totalBytes = 0;
-        if (_apps.Length == 0 || Width <= Dp(40) || Height <= Dp(60))
+        _totalWeight = 0;
+        if (_apps.Length == 0 || Width <= Dp(40) || Height <= Dp(50))
         {
             return;
         }
 
-        var entries = new List<Entry>();
-        foreach (var app in _apps)
-        {
-            if (app.WorkingSetBytes > 0)
-            {
-                entries.Add(new Entry(app.Key, app.DisplayName, app.WorkingSetBytes, app.CpuPercent, app.ProcessCount, EntryKind.Application));
-            }
-        }
-
+        var entries = _metric == TreemapMetric.Memory ? BuildMemoryEntries() : BuildCpuEntries();
         if (entries.Count == 0)
         {
             return;
         }
 
-        long attributed = entries.Sum(e => e.Bytes);
-        _attributedBytes = attributed;
+        entries.Sort((left, right) => right.Weight.CompareTo(left.Weight));
 
-        // 系统「在用」里总有一部分无法归属到任何进程（内核、驱动、文件缓存、压缩内存、共享页等）。
-        long used = Math.Max(_usedBytes, attributed);
-        long remainder = used - attributed;
-        if (remainder > Math.Max(256L << 20, used / 50))
+        var area = new RectangleF(Dp(12), Dp(30), Math.Max(1, Width - Dp(24)), Math.Max(1, Height - Dp(42)));
+        double total = entries.Sum(e => e.Weight);
+        _totalWeight = total;
+        if (total <= 0)
         {
-            entries.Add(new Entry("__unattributed__", "未归属（系统 / 缓存 / 共享）", remainder, 0, 0, EntryKind.Unattributed));
+            return;
         }
-
-        // 空闲物理内存也按比例画出来，这样整张树图的面积就等于物理内存总量。
-        long free = 0;
-        if (_physicalBytes > 0)
-        {
-            free = Math.Max(0, _physicalBytes - used);
-            if (free > Math.Max(64L << 20, _physicalBytes / 100))
-            {
-                entries.Add(new Entry("__free__", "空闲内存", free, 0, 0, EntryKind.Free));
-            }
-        }
-
-        entries.Sort((left, right) => right.Bytes.CompareTo(left.Bytes));
-
-        var area = new RectangleF(Dp(12), Dp(34), Math.Max(1, Width - Dp(24)), Math.Max(1, Height - Dp(46)));
-        double total = entries.Sum(e => (double)e.Bytes);
-        _totalBytes = (long)total;
 
         double scale = area.Width * area.Height / total;
         var nodes = entries
-            .Select((entry, index) => new Node(entry.Key, entry.Name, entry.Bytes, entry.Cpu, entry.ProcessCount, entry.Bytes * scale, index, entry.Kind))
+            .Select((entry, index) => new Node(entry, entry.Weight * scale, index))
             .ToList();
 
         var remaining = area;
@@ -191,19 +177,99 @@ internal sealed class AppTreemapControl : Control
                 continue;
             }
 
-            var fill = node.Kind switch
+            var entry = node.Entry;
+            var fill = entry.Kind switch
             {
                 EntryKind.Unattributed => _theme.IsDark ? Color.FromArgb(62, 67, 76) : Color.FromArgb(206, 210, 216),
                 EntryKind.Free => _theme.IsDark ? Color.FromArgb(40, 45, 54) : Color.FromArgb(238, 241, 245),
                 _ => Palette(node.Index),
             };
-            _blocks.Add(new Block(rect, node.Key, node.Name, node.Bytes, node.Cpu, node.ProcessCount, fill));
+            _blocks.Add(new Block(rect, entry.Key, entry.Name, entry.ValueText, entry.Weight, entry.Cpu, entry.ProcessCount, fill, entry.IconPath));
         }
 
         if (_hovered >= _blocks.Count)
         {
             _hovered = -1;
         }
+    }
+
+    /// <summary>内存口径：应用工作集 + 未归属 + 空闲。</summary>
+    private List<Entry> BuildMemoryEntries()
+    {
+        var entries = new List<Entry>();
+        foreach (var app in _apps)
+        {
+            if (app.WorkingSetBytes > 0)
+            {
+                entries.Add(new Entry(
+                    app.Key,
+                    app.DisplayName,
+                    app.WorkingSetBytes,
+                    FormatUtil.Bytes(app.WorkingSetBytes),
+                    app.CpuPercent,
+                    app.ProcessCount,
+                    app.IconSourcePath ?? app.RootPath,
+                    EntryKind.Application));
+            }
+        }
+
+        if (entries.Count == 0)
+        {
+            return entries;
+        }
+
+        long attributed = entries.Sum(e => (long)e.Weight);
+        _attributedBytes = attributed;
+
+        // 系统「在用」里总有一部分无法归属到任何进程（内核、驱动、文件缓存、压缩内存、共享页等）。
+        long used = Math.Max(_usedBytes, attributed);
+        long remainder = used - attributed;
+        if (remainder > Math.Max(256L << 20, used / 50))
+        {
+            entries.Add(new Entry("__unattributed__", "未归属（内核 / 缓存 / 共享）", remainder, FormatUtil.Bytes(remainder), 0, 0, null, EntryKind.Unattributed));
+        }
+
+        // 空闲物理内存也按比例画出来，让整张图的面积等于物理内存总量。
+        if (_physicalBytes > 0)
+        {
+            long free = Math.Max(0, _physicalBytes - used);
+            if (free > Math.Max(64L << 20, _physicalBytes / 100))
+            {
+                entries.Add(new Entry("__free__", "空闲内存", free, FormatUtil.Bytes(free), 0, 0, null, EntryKind.Free));
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>CPU 口径：应用 CPU 百分比 + 空闲 CPU（整机口径下才补）。</summary>
+    private List<Entry> BuildCpuEntries()
+    {
+        var entries = new List<Entry>();
+        double total = 0;
+        foreach (var app in _apps)
+        {
+            if (app.CpuPercent <= 0.01)
+            {
+                continue;
+            }
+
+            total += app.CpuPercent;
+            entries.Add(new Entry(
+                app.Key,
+                app.DisplayName,
+                app.CpuPercent,
+                FormatUtil.Percent(app.CpuPercent),
+                app.CpuPercent,
+                app.ProcessCount,
+                app.IconSourcePath ?? app.RootPath,
+                EntryKind.Application));
+        }
+
+        // 不画「空闲 CPU」：CPU 分布要看的是「谁在占」，空闲占去 80~90% 的面积反而让应用块看不清；
+        // 整机空闲多少在顶部指标卡和本视图右上角文案里已经有了。
+        _ = total;
+        return entries;
     }
 
     private enum EntryKind
@@ -213,30 +279,28 @@ internal sealed class AppTreemapControl : Control
         Free,
     }
 
-    private sealed record Entry(string Key, string Name, long Bytes, double Cpu, int ProcessCount, EntryKind Kind);
+    private sealed record Entry(
+        string Key,
+        string Name,
+        double Weight,
+        string ValueText,
+        double Cpu,
+        int ProcessCount,
+        string? IconPath,
+        EntryKind Kind);
 
     private sealed class Node
     {
-        public Node(string key, string name, long bytes, double cpu, int processCount, double area, int index, EntryKind kind)
+        public Node(Entry entry, double area, int index)
         {
-            Key = key;
-            Name = name;
-            Bytes = bytes;
-            Cpu = cpu;
-            ProcessCount = processCount;
+            Entry = entry;
             Area = area;
             Index = index;
-            Kind = kind;
         }
 
-        public string Key { get; }
-        public string Name { get; }
-        public long Bytes { get; }
-        public double Cpu { get; }
-        public int ProcessCount { get; }
+        public Entry Entry { get; }
         public double Area { get; }
         public int Index { get; }
-        public EntryKind Kind { get; }
         public RectangleF Rect { get; set; }
     }
 
@@ -276,7 +340,6 @@ internal sealed class AppTreemapControl : Control
 
         if (remaining.Width >= remaining.Height)
         {
-            // 竖着排一列，贴在剩余区域的左侧
             float columnWidth = (float)(rowArea / remaining.Height);
             float y = remaining.Y;
             foreach (var node in row)
@@ -290,7 +353,6 @@ internal sealed class AppTreemapControl : Control
         }
         else
         {
-            // 横着排一行，贴在剩余区域的顶部
             float rowHeight = (float)(rowArea / remaining.Width);
             float x = remaining.X;
             foreach (var node in row)
@@ -310,12 +372,10 @@ internal sealed class AppTreemapControl : Control
         double hue = (index * 43 % 360) / 360.0;
         if (_theme.IsDark)
         {
-            // 深色下用低饱和的莫兰迪色系：能区分相邻方块，又不会像糖果盘一样刺眼
             double lightness = 0.30 + (index % 4) * 0.035;
             return FromHsl(hue, 0.34, lightness);
         }
 
-        // 浅色下同样收敛饱和度，靠明度差区分层次
         double lightLightness = 0.70 + (index % 4) * 0.028;
         return FromHsl(hue, 0.30, lightLightness);
     }
@@ -380,12 +440,14 @@ internal sealed class AppTreemapControl : Control
 
         if (_blocks.Count == 0)
         {
-            string message = _apps.Length == 0 ? "正在等待第一帧采样数据…" : "当前筛选条件下没有可显示的内存占用";
+            string message = _apps.Length == 0
+                ? "正在等待第一帧采样数据…"
+                : _metric == TreemapMetric.Memory ? "当前筛选条件下没有可显示的内存占用" : "当前没有可显示的 CPU 占用";
             TextRenderer.DrawText(
                 graphics,
                 message,
                 _theme.UiFont,
-                new Rectangle(Dp(12), Dp(48), Math.Max(0, Width - Dp(24)), Math.Max(0, Height - Dp(60))),
+                new Rectangle(Dp(12), Dp(40), Math.Max(0, Width - Dp(24)), Math.Max(0, Height - Dp(52))),
                 _theme.TextMuted,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.WordBreak);
             return;
@@ -396,47 +458,47 @@ internal sealed class AppTreemapControl : Control
         {
             DrawBlock(graphics, _blocks[i], i == _hovered);
         }
+
+        if (_hovered >= 0 && _hovered < _blocks.Count)
+        {
+            DrawHoverCard(graphics, _blocks[_hovered]);
+        }
     }
 
-    private static string TrimUnit(long bytes) => FormatUtil.Bytes(bytes).Replace(" GB", string.Empty, StringComparison.Ordinal)
+    private static string TrimUnit(long bytes) => FormatUtil.Bytes(bytes)
+        .Replace(" GB", string.Empty, StringComparison.Ordinal)
         .Replace(" MB", string.Empty, StringComparison.Ordinal)
         .Replace(" KB", string.Empty, StringComparison.Ordinal)
         .Replace(" B", string.Empty, StringComparison.Ordinal);
 
     private void DrawHeader(Graphics graphics)
     {
-        int titleWidth = TextRenderer.MeasureText(graphics, "内存分布", _theme.UiBoldFont, new Size(int.MaxValue, Dp(20)), TextFormatFlags.NoPadding).Width + Dp(4);
-        var titleRect = new Rectangle(Dp(12), Dp(8), Math.Max(Dp(40), titleWidth), Dp(20));
-        TextRenderer.DrawText(
-            graphics,
-            "内存分布",
-            _theme.UiBoldFont,
-            titleRect,
-            _theme.TextPrimary,
-            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine);
+        string caption;
+        if (_metric == TreemapMetric.Memory)
+        {
+            long used = Math.Max(_usedBytes, _attributedBytes);
+            long free = _physicalBytes > used ? _physicalBytes - used : 0;
+            caption = _attributedBytes > 0 && used > _attributedBytes
+                ? "已归属 " + TrimUnit(_attributedBytes) + " / 在用 " + TrimUnit(used)
+                  + (free > 0 ? " / 空闲 " + FormatUtil.Bytes(free) : string.Empty)
+                : "共 " + FormatUtil.Bytes((long)_totalWeight) + " · 面积 = 内存";
+        }
+        else
+        {
+            double appTotal = _blocks.Sum(b => b.Weight);
+            caption = "应用合计 " + FormatUtil.Percent(appTotal) + "（其余为空闲）";
+        }
 
-        if (_totalBytes <= 0)
+        if (string.IsNullOrEmpty(caption))
         {
             return;
         }
 
-        long used = Math.Max(_usedBytes, _attributedBytes);
-        long free = _physicalBytes > used ? _physicalBytes - used : 0;
-        string caption = _attributedBytes > 0 && used > _attributedBytes
-            ? "已归属 " + TrimUnit(_attributedBytes) + " / 在用 " + TrimUnit(used)
-              + (free > 0 ? " / 空闲 " + FormatUtil.Bytes(free) : string.Empty)
-            : "共 " + FormatUtil.Bytes(_totalBytes) + " · 面积 = 内存";
-
-        var captionRect = new Rectangle(
-            titleRect.Right + Dp(10),
-            Dp(8),
-            Math.Max(0, Width - Dp(12) - (titleRect.Right + Dp(10))),
-            Dp(20));
         TextRenderer.DrawText(
             graphics,
             caption,
             _theme.SmallFont,
-            captionRect,
+            new Rectangle(Dp(12), Dp(6), Math.Max(0, Width - Dp(24)), Dp(18)),
             _theme.TextMuted,
             TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
     }
@@ -449,7 +511,8 @@ internal sealed class AppTreemapControl : Control
             graphics.FillRectangle(fill, rect);
         }
 
-        if (block.Key == "__free__" && rect.Width > Dp(8) && rect.Height > Dp(8))
+        bool neutral = block.Key is "__free__" or "__idle_cpu__" or "__unattributed__";
+        if (block.Key is "__free__" or "__idle_cpu__" && rect.Width > Dp(8) && rect.Height > Dp(8))
         {
             var state = graphics.Save();
             graphics.SetClip(rect);
@@ -486,18 +549,39 @@ internal sealed class AppTreemapControl : Control
             graphics.DrawRectangle(pen, rect.X, rect.Y, Math.Max(0, rect.Width - 1), Math.Max(0, rect.Height - 1));
         }
 
-        // 只有方块够大时才写文字，避免小方块里全是碎字
-        if (rect.Width < Dp(52) || rect.Height < Dp(26))
+        if (rect.Width < Dp(46) || rect.Height < Dp(24))
         {
             return;
         }
 
         var textColor = _theme.IsDark ? Color.FromArgb(238, 242, 248) : Color.FromArgb(28, 32, 38);
         int padding = Dp(6);
+        int textLeft = (int)rect.X + padding;
+
+        // 应用图标画在方块右下角：不占文字位置，也不影响名称可读性
+        if (!neutral && block.IconPath is { Length: > 0 })
+        {
+            int iconSize = rect.Width >= Dp(120) && rect.Height >= Dp(64) ? Dp(20) : Dp(16);
+            if (rect.Width >= iconSize + padding * 2 && rect.Height >= iconSize + padding * 2)
+            {
+                var icon = _icons.GetIcon(block.IconPath, block.Name, iconSize);
+                if (icon is not null)
+                {
+                    graphics.DrawImage(
+                        icon,
+                        new Rectangle(
+                            (int)rect.Right - padding - iconSize,
+                            (int)rect.Bottom - padding - iconSize,
+                            iconSize,
+                            iconSize));
+                }
+            }
+        }
+
         var nameRect = new Rectangle(
-            (int)rect.X + padding,
+            textLeft,
             (int)rect.Y + padding,
-            Math.Max(0, (int)rect.Width - padding * 2),
+            Math.Max(0, (int)rect.Right - padding - textLeft),
             Dp(16));
         TextRenderer.DrawText(
             graphics,
@@ -512,16 +596,16 @@ internal sealed class AppTreemapControl : Control
             return;
         }
 
-        var sizeRect = new Rectangle(
+        var valueRect = new Rectangle(
             (int)rect.X + padding,
             (int)rect.Y + padding + Dp(16),
             Math.Max(0, (int)rect.Width - padding * 2),
             Dp(15));
         TextRenderer.DrawText(
             graphics,
-            FormatUtil.Bytes(block.Bytes),
+            block.ValueText,
             _theme.SmallFont,
-            sizeRect,
+            valueRect,
             _theme.IsDark ? Color.FromArgb(205, 214, 226) : Color.FromArgb(58, 64, 74),
             TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
     }
@@ -540,43 +624,157 @@ internal sealed class AppTreemapControl : Control
             }
         }
 
-        if (hit == _hovered)
+        _hoverPoint = e.Location;
+        if (hit != _hovered)
         {
-            return;
+            _hovered = hit;
+            Cursor = hit >= 0 ? Cursors.Hand : Cursors.Default;
         }
 
-        _hovered = hit;
-        if (hit >= 0)
-        {
-            var block = _blocks[hit];
-            string text;
-            if (block.Key == "__unattributed__")
-            {
-                text = "未归属内存 " + FormatUtil.Bytes(block.Bytes) + Environment.NewLine +
-                       "这部分物理内存无法归属到某个进程：内核与驱动、文件缓存、" + Environment.NewLine +
-                       "内存压缩、GPU 与共享页等。";
-            }
-            else if (block.Key == "__free__")
-            {
-                double share = _physicalBytes > 0 ? block.Bytes * 100.0 / _physicalBytes : 0;
-                text = "空闲内存 " + FormatUtil.Bytes(block.Bytes) + Environment.NewLine +
-                       "占物理内存 " + share.ToString("F1", System.Globalization.CultureInfo.CurrentCulture) + "%" + Environment.NewLine +
-                       "（系统可用内存，随时可以被应用申请）";
-            }
-            else
-            {
-                text = block.Name + Environment.NewLine +
-                       "内存 " + FormatUtil.Bytes(block.Bytes) + Environment.NewLine +
-                       "CPU " + FormatUtil.Percent(block.CpuPercent) + " · " + block.ProcessCount + " 个进程";
-            }
-            _tooltip.SetToolTip(this, text);
-        }
-        else
-        {
-            _tooltip.SetToolTip(this, null);
-        }
-
+        // 悬停卡片跟手且内容实时刷新，所以每次移动都重绘
         Invalidate();
+    }
+
+    /// <summary>自绘悬浮卡片：跟随鼠标、内容每帧实时刷新（数据变了卡片就跟着变）。</summary>
+    private void DrawHoverCard(Graphics graphics, Block block)
+    {
+        var (title, lines) = Describe(block);
+
+        int pad = Dp(10);
+        int lineGap = Dp(3);
+        const TextFormatFlags measureFlags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+        var titleSize = TextRenderer.MeasureText(graphics, title, _theme.UiBoldFont, new Size(int.MaxValue, int.MaxValue), measureFlags);
+        var lineSizes = lines
+            .Select(line => TextRenderer.MeasureText(graphics, line, _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), measureFlags))
+            .ToArray();
+
+        int contentWidth = Math.Max(titleSize.Width, lineSizes.Length == 0 ? 0 : lineSizes.Max(s => s.Width));
+        // 多留几个像素：不同 DPI 下 TextRenderer 的测量与绘制会有一两个像素的差异，
+        // 不留余量会导致明明放得下的文字被 EndEllipsis 截断。
+        int width = Math.Min(contentWidth + pad * 2 + Dp(8), Math.Max(Dp(140), Width - Dp(10)));
+        int height = pad * 2 + titleSize.Height;
+        if (lineSizes.Length > 0)
+        {
+            height += Dp(4);
+            foreach (var size in lineSizes)
+            {
+                height += size.Height + lineGap;
+            }
+
+            height -= lineGap;
+        }
+
+        int x = _hoverPoint.X + Dp(14);
+        int y = _hoverPoint.Y + Dp(18);
+        if (x + width > Width - Dp(4))
+        {
+            x = _hoverPoint.X - width - Dp(12);
+        }
+
+        if (y + height > Height - Dp(4))
+        {
+            y = _hoverPoint.Y - height - Dp(12);
+        }
+
+        x = Math.Max(Dp(4), x);
+        y = Math.Max(Dp(4), y);
+        var card = new Rectangle(x, y, width, height);
+
+        using (var shadow = new SolidBrush(Color.FromArgb(_theme.IsDark ? 90 : 45, 0, 0, 0)))
+        using (var shadowPath = RoundedRect(new Rectangle(card.X + Dp(1), card.Y + Dp(2), card.Width, card.Height), Dp(8)))
+        {
+            graphics.FillPath(shadow, shadowPath);
+        }
+
+        using (var path = RoundedRect(card, Dp(8)))
+        using (var fill = new SolidBrush(_theme.IsDark ? Color.FromArgb(44, 49, 59) : Color.FromArgb(255, 255, 255)))
+        using (var border = new Pen(_theme.Border))
+        {
+            graphics.FillPath(fill, path);
+            graphics.DrawPath(border, path);
+        }
+
+        int textLeft = card.X + pad;
+        int textWidth = card.Width - pad * 2;
+        int textTop = card.Y + pad;
+        TextRenderer.DrawText(
+            graphics,
+            title,
+            _theme.UiBoldFont,
+            new Rectangle(textLeft, textTop, textWidth, titleSize.Height),
+            _theme.TextPrimary,
+            TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
+
+        textTop += titleSize.Height + Dp(4);
+        for (int i = 0; i < lines.Count; i++)
+        {
+            TextRenderer.DrawText(
+                graphics,
+                lines[i],
+                _theme.SmallFont,
+                new Rectangle(textLeft, textTop, textWidth, lineSizes[i].Height),
+                _theme.TextSecondary,
+                TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
+            textTop += lineSizes[i].Height + lineGap;
+        }
+    }
+
+    private (string Title, List<string> Lines) Describe(Block block)
+    {
+        var lines = new List<string>(3);
+
+        if (block.Key == "__unattributed__")
+        {
+            lines.Add(block.ValueText + " · 占在用内存 " + Share(block.Weight, _usedBytes > 0 ? _usedBytes : block.Weight));
+            lines.Add("内核与驱动、文件缓存、压缩内存、共享页等");
+            lines.Add("这部分无法归属到任何进程");
+            return ("未归属内存", lines);
+        }
+
+        if (block.Key == "__free__")
+        {
+            lines.Add(block.ValueText + " · 占物理内存 " + Share(block.Weight, _physicalBytes));
+            lines.Add("系统可用内存，随时可以被应用申请");
+            return ("空闲内存", lines);
+        }
+
+        if (block.Key == "__idle_cpu__")
+        {
+            lines.Add(block.ValueText + " · 整机口径下未被任何进程占用");
+            return ("空闲 CPU", lines);
+        }
+
+        if (_metric == TreemapMetric.Memory)
+        {
+            long used = Math.Max(_usedBytes, _attributedBytes);
+            lines.Add("内存 " + block.ValueText + (used > 0 ? " · 占在用 " + Share(block.Weight, used) : string.Empty));
+            lines.Add("CPU " + FormatUtil.Percent(block.CpuPercent) + " · " + block.ProcessCount + " 个进程");
+            return (block.Name, lines);
+        }
+
+        lines.Add("CPU " + block.ValueText + " · " + block.ProcessCount + " 个进程");
+        return (block.Name, lines);
+    }
+
+    private static string Share(double part, double whole)
+        => whole <= 0 ? "—" : (part * 100.0 / whole).ToString("F1", System.Globalization.CultureInfo.CurrentCulture) + "%";
+
+    private static GraphicsPath RoundedRect(Rectangle bounds, int radius)
+    {
+        var path = new GraphicsPath();
+        if (radius <= 1)
+        {
+            path.AddRectangle(bounds);
+            return path;
+        }
+
+        int diameter = radius * 2;
+        path.AddArc(bounds.X, bounds.Y, diameter, diameter, 180, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Y, diameter, diameter, 270, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+        path.AddArc(bounds.X, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     /// <inheritdoc />
@@ -586,7 +784,7 @@ internal sealed class AppTreemapControl : Control
         if (_hovered >= 0)
         {
             _hovered = -1;
-            _tooltip.SetToolTip(this, null);
+            Cursor = Cursors.Default;
             Invalidate();
         }
     }
@@ -594,11 +792,6 @@ internal sealed class AppTreemapControl : Control
     /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
-        {
-            _tooltip.Dispose();
-        }
-
         base.Dispose(disposing);
     }
 }

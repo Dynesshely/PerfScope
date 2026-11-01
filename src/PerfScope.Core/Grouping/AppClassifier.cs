@@ -189,6 +189,12 @@ public sealed class AppClassifier : IAppClassifier
             return merged;
         }
 
+        // ①.5 系统功能模块（WSL / 虚拟机 / 图形 / 安全 / 更新 / 内核 …）
+        if (snapshot.MergeWindowsSystemProcesses && SystemModuleCatalog.TryMatch(exeBase, path, out var moduleIdentity))
+        {
+            return WithRename(moduleIdentity, rules.Rename);
+        }
+
         // ② Windows 系统进程聚合
         if (snapshot.MergeWindowsSystemProcesses && IsSystemProcess(exeBase, path))
         {

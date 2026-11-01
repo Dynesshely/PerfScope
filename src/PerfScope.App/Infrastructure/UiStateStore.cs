@@ -32,8 +32,12 @@ internal sealed class UiState
     /// <summary>左侧应用列表占内容区的宽度比例（0.2~0.85），默认 0.62。</summary>
     public double SplitRatio { get; set; } = 0.62;
 
-    /// <summary>右侧内存树图是否显示。</summary>
+    /// <summary>右侧分布视图是否显示。</summary>
     public bool TreemapVisible { get; set; } = true;
+
+    /// <summary>右侧分布视图当前标签：0 = 内存分布，1 = CPU 分布。</summary>
+    public int DistributionTab { get; set; }
+
 }
 
 /// <summary>界面状态的读写，全部容错：任何异常都不允许影响主流程。</summary>

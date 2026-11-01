@@ -23,6 +23,9 @@ public enum AppKind
 
     /// <summary>其它（无法归类的兜底组）。</summary>
     Unknown = 6,
+
+    /// <summary>按系统功能模块归并（WSL、虚拟机与容器、图形界面、安全防护、搜索、更新、内核等）。</summary>
+    SystemModule = 7,
 }
 
 /// <summary>
