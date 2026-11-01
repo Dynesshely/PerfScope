@@ -1,185 +1,131 @@
-# PerfScope —— 常驻型 CPU / 内存监控（按`应用`看，不按进程看）
+<div align="center">
 
-PerfScope 是一个 Windows 桌面小工具，目标很明确：
+<img src="docs/logo.svg" width="104" height="104" alt="PerfScope" />
 
-1. **能真的赖在后台一整年**：托盘常驻时自身 CPU 约 0.011~0.015%（整机口径，默认 2 秒采样、
-   隐藏降频到 5 秒），工作集约 26~33 MB（私有内存 18 MB），句柄数稳定；主窗口打开时
-   自身上升到约 0.07% CPU / 74~110 MB 工作集（自绘列表 + 双缓冲 + 图标缓存）；
-2. **只回答"哪个应用占资源"**：把进程按版本信息 / 安装目录 / 目录树综合分析，挂钩到同一个应用上，
-   Chrome 的 38 个进程、Brave 的 48 个进程在界面上就是一行；
-3. **参数全部可调**：采样频率、归并策略、留存时长、界面刷新、告警阈值……都在设置页里改，改完热生效。
+# PerfScope
 
-## 快速开始
+**Application-level CPU & memory monitoring for Windows — quiet, precise, and ready to talk to your AI.**
 
-    # 1) 构建（Debug）
-    .\scripts\build.ps1
+<p>
+  <a href="https://github.com/Dynesshely/PerfScope/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Dynesshely/PerfScope?style=flat-square&color=22C55E" /></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white" />
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
+  <img alt="Dependencies" src="https://img.shields.io/badge/third--party%20dependencies-0-8B5CF6?style=flat-square" />
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-F59E0B?style=flat-square" />
+</p>
 
-    # 2) 直接跑（Release 产物，托盘常驻）
-    .\scripts\build.ps1 -Release
-    .\scripts\run.ps1
+</div>
 
-    # 3) 发布单文件（dist\PerfScope.exe，依赖已安装的 .NET 10 桌面运行时）
-    .\scripts\build.ps1 -Publish
+## Introduction
 
-    # 4) 跑测试
-    .\scripts\run-tests.ps1
+Most task managers tell you *which process* is busy. PerfScope tells you **which application** is busy.
 
-    # 5) 实测自身开销（启动 → 采集 60 秒 → 汇总 CPU / 内存 / 句柄 / 磁盘增长）
-    .\scripts\measure.ps1 -Seconds 60
+Individual processes are merged into the applications they belong to — browser renderers, Electron helpers, launchers and background workers all collapse into one honest row, together with the system features they represent, such as Windows Subsystem for Linux, the graphics stack, the kernel, or security services. What you see is a short list of applications you actually recognise, ranked by real usage.
 
-不开界面、只想看数据或排障时：
+**Highlights**
 
-    # 采 4 帧、每 1.5 秒一帧、打印前 18 个应用
-    .\tools\PerfScope.Cli\bin\Release\net10.0-windows\PerfScope.Cli.exe --frames 4 --interval 1500 --top 18
+- **Application-level attribution** — hundreds of processes become a handful of apps, with the reason behind every grouping shown right in the UI.
+- **Live distribution maps** — switch between *Memory* and *CPU* treemaps; block area is proportional to real usage, icons sit in the corner of each block, and a self-drawn hover card keeps the numbers current as you move.
+- **Rich header trends** — the two headline cards unfold full axes, crosshair and a value tooltip on hover, so a glance becomes a measurement.
+- **History that stays useful** — minute-level aggregation, noticeable episodes (CPU bursts, memory growth, system pressure) and a readable daily report, all kept on disk for the retention you choose.
+- **Ready for your AI** — one click copies a fully prepared prompt that points your assistant at the local report, so analysis starts immediately instead of after an hour of context building.
+- **Light on the machine** — a single sampling path, a compact memory footprint, and adaptive throttling while the window is hidden.
 
-    # 只测原生采集耗时
-    ... PerfScope.Cli.exe --bench --rounds 10
+<div align="center">
+  <img src="docs/images/screenshot-main.png" alt="PerfScope main window — memory distribution" width="880" />
+  <br />
+  <sub>Memory distribution — every block is an application, area is proportional to real usage.</sub>
+</div>
 
-    # 接管道给别的工具
-    ... PerfScope.Cli.exe --frames 3 --json
+<div align="center">
+  <img src="docs/images/screenshot-cpu.png" alt="PerfScope CPU distribution view" width="880" />
+  <br />
+  <sub>CPU distribution — see at a glance who owns the processor right now.</sub>
+</div>
 
-## 界面
+<div align="center">
+  <img src="docs/images/screenshot-agent.png" alt="PerfScope Agent handoff prompt" width="720" />
+  <br />
+  <sub>Agent handoff — a ready-to-paste prompt with paths, definitions and preliminary findings.</sub>
+</div>
 
-![PerfScope 主界面](docs/images/screenshot-main.png)
+## How to Use
 
-- **托盘**：常驻图标，双击开主窗口；右键可暂停监控、打开设置、开关开机启动、退出。
-- **主窗口**：顶部是两张指标卡（整机 CPU / 物理内存：标题、大数字、明细、固定 0~100 刻度的迷你趋势线）；
-  中间左右分栏：左边是应用列表（应用名、CPU%、内存、进程数、磁盘读写、迷你趋势，点击一行可展开成员进程），
-  右边是**分布视图**，顶部分段标签可切换「内存分布 / CPU 分布」，都是 Treemap（矩形树图，SpaceSniffer 用的同一类可视化）：
-  内存分布覆盖物理内存（应用块 + 灰色斜纹「未归属（内核/驱动/缓存/共享页）」+ 点阵「空闲内存」），
-  CPU 分布只画正在占用 CPU 的应用（面积 = 占用百分比）；应用图标画在方块右下角，鼠标悬停显示自绘卡片（实时刷新）；
-  列表滚动条也是自绘的，跟随深色/浅色主题；
-  两栏之间的分隔条可以拖动，比例会记住（工具栏「内存分布」可开关右栏）。
-  底部状态栏分三段：采样参数 / **监控器自身开销** / 进程与应用数量。窗口标题栏、任务栏、托盘、exe 统一使用同一枚图标。
-- **设置页**：覆盖全部参数，保存即生效。
+PerfScope lives in the notification area and opens with a single click on the tray icon.
 
-关闭窗口默认最小化到托盘（可在设置里改成直接退出）。托盘常驻时采样自动降频到 5 秒一次。
-
-## 设置项一览
-
-| 分组 | 参数 | 默认 | 说明 |
-|---|---|---|---|
-| 采样 | 采样间隔 | 2000 ms | 500~10000；越大越省资源 |
-| 采样 | 界面刷新间隔 | 1000 ms | 250~10000；只影响重绘，不影响采样 |
-| 采样 | 隐藏时自适应降频 | 开 | 窗口不可见时改用隐藏间隔 |
-| 采样 | 隐藏采样间隔 | 5000 ms | 1000~60000 |
-| 采样 | 平滑窗口 | 3 帧 | 1 表示不平滑，用于压制毛刺 |
-| 口径 | CPU 口径 | 整机百分比 | 或"单核百分比"（单线程跑满 = 100） |
-| 口径 | 内存口径 | 工作集 | 或"私有提交" |
-| 归并 | 按产品名归并 | 开 | 读 exe 版本信息，最能代表"一个应用" |
-| 归并 | 按安装目录归并 | 开 | Program Files / LOCALAPPDATA\Programs / UWP / Steam 等 |
-| 归并 | 子进程继承父进程 | 开 | 自身归属弱时沿用父进程 |
-| 归并 | 合并 Windows 系统进程 | 开 | svchost 等合并为一行，避免刷屏 |
-| 归并 | 自定义规则 | 空 | 合并到指定应用 / 只改名 / 排除 |
-| 留存 | 内存保留 | 60 分钟 | 趋势曲线的内存缓冲 |
-| 留存 | 磁盘保留 | 30 天 | 分钟级聚合，约 40 MB |
-| 留存 | 趋势应用数 | 12 | 只跟踪 CPU 前 N 个应用，控制内存 |
-| 界面 | 显示行数 | 30 | 5~200 |
-| 界面 | 开机启动 | 关 | 写 HKCU\...\Run，不需要管理员 |
-| 界面 | 关闭行为 | 最小化到托盘 | 或直接退出 |
-| 界面 | 显示自身开销 | 开 | 状态栏显示自己的 CPU / 内存 |
-| 界面 | 显示系统进程组 | 开 |                 |
-| 告警 | 阈值告警 | 关 | CPU / 内存超阈值弹托盘气泡，带冷却 |
-
-### 自定义规则示例
-
-    # 把某个绿色软件的多个目录合并成一行
-    匹配方式 PathContains  模式 D:\Tools\MyApp\  动作 合并到指定应用  目标 MyApp
-
-    # 只改显示名
-    匹配方式 ExeName  模式 wechat.exe  动作 重命名  目标 微信
-
-    # 把不关心的后台程序从列表里去掉
-    匹配方式 PathContains  模式 \AppData\Local\Temp\  动作 排除
-
-## 归并是怎么做的
-
-优先级（命中即停，界面上会把依据写在"归并依据"里，结果可解释）：
-
-1. 用户自定义规则；
-2. **系统功能模块**：把系统自己占的部分按功能拆开 —— WSL 子系统、虚拟机与容器、图形界面与显卡驱动、
-   安全与防护、搜索与索引、系统更新、音频、打印、内核与系统核心；剩下的系统进程才进「Windows 系统」组
-   （只按进程身份识别，不查服务、不需要管理员权限）；
-3. Windows 系统进程聚合（System32 / SysWOW64 / WinSxS 等；但 explorer.exe 这类仍按普通应用处理）；
-4. **exe 版本信息**（ProductName + CompanyName）——Chrome / Electron 类应用的多进程天然同源；
-5. **安装根目录**（Program Files 的 Vendor\App、LOCALAPPDATA\Programs、WindowsApps 包族名、
-   steamapps\common\Game，以及向上探测卸载器 / resources\app.asar 特征）；
-6. exe 所在目录；
-7. exe 文件名；
-8. 兜底组。
-
-解析结果全部进缓存（LRU + TTL），热路径上只是字典命中，不会每帧读盘。
-
-## 数据与隐私
-
-- 全部数据落在 %LOCALAPPDATA%\PerfScope：settings.json、history\（按天 32 字节定长记录）、logs\。
-- **不联网、不收集、不上传**，没有第三方依赖（Core 与 App 只用 .NET 基础库 + WinForms + P/Invoke）。
-- 磁盘占用：每分钟每个活跃应用一条 32 字节记录，默认保留 30 天约 40 MB；日志按大小轮转（默认上限 512 KB）。
-- 权益：删掉 %LOCALAPPDATA%\PerfScope 即彻底清除。
-
-
-## 分析数据（给 AI 用）
-
-PerfScope 不只是把 2 秒一个的采样点存下来，而是**在算法层先压一遍**，产出结论型历史，模型可以直接读：
-
-| 文件 | 内容 |
+| Area | What you can do |
 |---|---|
-| %LOCALAPPDATA%\PerfScope\insights\yyyy-MM-dd.jsonl | 事件流，一行一个 JSON：CPU 高占用片段、内存持续增长、整机高负载、内存压力、5 分钟窗口摘要（含 Top 应用排行） |
-| %LOCALAPPDATA%\PerfScope\analysis\yyyy-MM-dd-report.md | 当日分析报告：总体指标、应用排行、值得关注的事件、结论线索、给 AI 的提问建议、口径说明 |
-| %LOCALAPPDATA%\PerfScope\analysis\yyyy-MM-dd-report.json | 同一份报告的机器可读版，schema 为 `perfscope.report/v1`，字段稳定 |
+| **Header cards** | Live system CPU and physical memory, with trend curves. Hover a curve for axes, crosshair and the exact value at any moment. |
+| **Application list** | Click any column to sort, expand an application to inspect its processes, and read the grouping reason in the tooltip. |
+| **Distribution view** | Toggle *Memory* / *CPU* tabs, resize the splitter, or hide the panel entirely from the toolbar. |
+| **Toolbar** | Pause monitoring, refresh immediately, open settings, browse history, generate the analysis report, or copy the Agent prompt. |
+| **History** | Browse previous days, compare applications by CPU time, peak CPU and peak memory. |
+| **Settings** | Sampling interval, smoothing, grouping rules, retention, theme, alerts, analysis thresholds — everything is adjustable and saved automatically. |
 
-事件类型与语义：
+The window remembers its size, the splitter ratio and the active distribution tab, and a second launch simply brings the existing instance forward.
 
-| kind | 含义 | 关键字段 |
-|---|---|---|
-| `session_start` | 一次会话开始 | `metrics.sampleIntervalSeconds` / `totalPhysicalMb` / `logicalProcessors` |
-| `app_cpu_episode` | 某应用 CPU 持续高于阈值（默认 25% 且 ≥20 秒） | `appName` `startUtc` `durationSeconds` `avgCpuPercent` `peakCpuPercent` `processCount` |
-| `app_memory_growth` | 某应用内存持续增长（默认 ≥50 MB/分钟，≥120 秒且累计 ≥150 MB） | `growthMbPerMinute` `peakMemoryMb` |
-| `system_cpu_episode` | 整机 CPU 持续高于阈值（默认 80% 且 ≥30 秒） | `durationSeconds` `avgCpuPercent` |
-| `system_memory_pressure` | 可用内存低于阈值（默认 8%） | `durationSeconds` |
-| `digest` | 5 分钟窗口摘要 | `apps[]`（Top 应用的平均/峰值 CPU、内存）、`metrics.systemCpuAvg` 等 |
+## Installation
 
-使用方式：
+**Requirements** — Windows 10 or Windows 11 (x64). No runtime, no installer, no administrator rights.
+
+1. Download the latest `PerfScope.exe` from the [Releases](https://github.com/Dynesshely/PerfScope/releases) page.
+2. Put it anywhere you like and run it.
+3. Optionally enable *Run at startup* in Settings.
+
+Data stays on your machine, under `%LOCALAPPDATA%\PerfScope`. To keep everything portable — for example on a USB drive — start it with `PerfScope.exe --data-dir <folder>`.
+
+## How to Dev
+
+Prerequisites: [.NET 10 SDK](https://dotnet.microsoft.com/download) and Windows.
 
 ~~~powershell
-# 应用内：工具栏「分析」→ 生成并打开报告目录
-# 命令行：生成当天报告并打印 Markdown
-PerfScope.Cli.exe --report
-# 机器可读输出
-PerfScope.Cli.exe --report --json
+git clone https://github.com/Dynesshely/PerfScope.git
+cd PerfScope
+
+dotnet build -c Debug                    # build everything
+dotnet run --project src/PerfScope.App   # run the app
+
+.\scripts\run-tests.ps1                  # run the test suite
+.\scripts\build.ps1 -Publish             # produce dist\PerfScope.exe
 ~~~
 
-设计约束：事件流是**追加写**的 JSONL（崩溃最多丢最后一行），报告每 5 分钟自动刷新一次；
-百分比统一为整机口径（0~100，等于任务管理器），内存单位为 MB；
-报告不含原始采样，单个文件几十 KB，适合直接塞进模型上下文。
+**Mock mode** — the UI can run on entirely synthetic data, which is how the screenshots above are produced and a convenient way to work on layout without any real workload:
 
-## 已知限制
+~~~powershell
+dotnet run --project src/PerfScope.App -- --mock
+.\scripts\mock-screenshots.ps1           # regenerate docs/images from mock data
+~~~
 
-- 仅支持 Windows 10/11 x64（原生结构按 64 位布局）。
-- 日志级别 / 日志大小上限的修改要**重启程序**才生效（ILog 没有热更新通道）。
-- 极高进程数的机器（2000+ 进程）上，单次采样成本随进程数线性上升：默认 2 秒间隔仍然很轻，
-  但如果你把间隔调到 500 ms，建议同时把"趋势应用数"调低。
-- 磁盘历史只记录每帧 CPU 靠前的应用，冷门应用可能没有当日摘要。
-- 归并是启发式的：同一软件如果存在两个独立安装目录，会显示为两个应用（名字会带区分后缀）。
+Project conventions, coding style and the release checklist live in [AGENTS.md](AGENTS.md).
 
-## 目录结构
+## Structure
 
-    PerfScope/
-      src/PerfScope.Core/       采样、归并、历史、设置、日志（无 UI 依赖）
-      src/PerfScope.App/        WinForms 托盘 + 主窗口 + 设置页
-      tools/PerfScope.Cli/      命令行冒烟 / 性能实测 / JSON 输出
-      tests/PerfScope.Tests/    单元测试（xunit）
-      tests/PerfScope.TestRunner/  反射测试运行器（绕过本机跑不起来的 dotnet test）
-      scripts/                  构建、运行、测试、实测、图标生成
-      docs/                     架构、归并规则、验收报告
+~~~text
+PerfScope/
+├─ src/
+│  ├─ PerfScope.Core/        # sampling, application grouping, history, insights, settings
+│  └─ PerfScope.App/         # WinForms shell: main window, controls, forms, theming
+├─ tools/
+│  └─ PerfScope.Cli/         # headless helper: frames, JSON output, reports, benchmarks
+├─ tests/
+│  ├─ PerfScope.Tests/       # xUnit test suite
+│  └─ PerfScope.TestRunner/  # lightweight console runner used in this repository
+├─ scripts/                  # build, test, screenshot and measurement helpers
+├─ docs/                     # logo and documentation images
+└─ artifacts/                # local build output and captured runs (not tracked)
+~~~
 
-## 开发说明
+## Star History
 
-- 启动 dev 版：`.\scripts\run-dev.ps1`（构建 → 镜像到 %LOCALAPPDATA%\PerfScope-dev → 启动）。
-  之所以要先镜像到工作区外：本机的 Windows 沙箱按"进程映像所在路径"生效，exe 在工作区内时
-  进程表会被过滤（实测 205 vs 930 个进程）、也写不了 %LOCALAPPDATA%，镜像出去才能拿到完整数据。
+<a href="https://star-history.com/#Dynesshely/PerfScope&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Dynesshely/PerfScope&type=Date&theme=dark" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Dynesshely/PerfScope&type=Date&theme=dark" width="720" />
+  </picture>
+</a>
 
-- 目标框架：.NET 10（net10.0-windows），SDK 由 global.json 固定为 10.0.402。
-- 零第三方 NuGet 依赖（Core/App）；测试项目用 xunit。
-- 本机 **dotnet test 不可用**（VSTest testhost 启动时需要打开父进程句柄，被环境拒绝），
-  因此提供 PerfScope.TestRunner：直接反射执行同一批 [Fact]/[Theory]，用 .\scripts\run-tests.ps1 调用。
+## LICENSE
+
+Released under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Dynesshely.
