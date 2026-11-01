@@ -2,6 +2,7 @@ using PerfScope.App.Demo;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core;
 using PerfScope.Core.Abstractions;
+using PerfScope.Core.Insights;
 using PerfScope.Core.Models;
 using PerfScope.Core.Settings;
 
@@ -14,8 +15,11 @@ namespace PerfScope.App;
 internal sealed class AppHost : IDisposable
 {
     private readonly bool _demo;
+    private readonly SessionAnalytics? _analytics;
+    private readonly InsightStore? _insights;
     private bool _paused;
     private bool _disposed;
+    private DateTime _lastReportUtc = DateTime.MinValue;
 
     private AppHost(
         AppSettings settings,
@@ -23,7 +27,9 @@ internal sealed class AppHost : IDisposable
         IMonitorEngine engine,
         IHistoryStore history,
         ILog log,
-        bool demo)
+        bool demo,
+        SessionAnalytics? analytics = null,
+        InsightStore? insights = null)
     {
         Settings = settings;
         SettingsStore = settingsStore;
@@ -31,6 +37,8 @@ internal sealed class AppHost : IDisposable
         History = history;
         Log = log;
         _demo = demo;
+        _analytics = analytics;
+        _insights = insights;
         Engine.FrameProduced += OnFrameProduced;
     }
 
@@ -118,7 +126,9 @@ internal sealed class AppHost : IDisposable
         ISettingsStore settingsStore = CoreRuntime.CreateSettingsStore(log);
         IMonitorEngine engine = CoreRuntime.CreateEngine(settings, log);
         IHistoryStore history = CoreRuntime.CreateHistory(settings, log);
-        return new AppHost(settings, settingsStore, engine, history, log, demo: false);
+        var analytics = new SessionAnalytics(settings);
+        var insights = new InsightStore(AppPaths.DataDirectory, log);
+        return new AppHost(settings, settingsStore, engine, history, log, demo: false, analytics, insights);
     }
 
     /// <summary>启动采样。失败不抛异常，只记录日志。</summary>
@@ -223,6 +233,16 @@ internal sealed class AppHost : IDisposable
 
             try
             {
+                _analytics?.UpdateSettings(next);
+                _insights?.Trim(next.DiskRetentionDays);
+            }
+            catch (Exception ex)
+            {
+                SafeLog(LogLevel.Warn, "分析模块热更新设置失败", ex);
+            }
+
+            try
+            {
                 History.OnSettingsChanged(next);
             }
             catch (Exception ex)
@@ -243,6 +263,32 @@ internal sealed class AppHost : IDisposable
             LastError = "保存设置失败：" + ex.Message;
             SafeLog(LogLevel.Error, "保存设置失败", ex);
             return false;
+        }
+    }
+
+    /// <summary>分析数据目录（report.md / report.json 所在位置）。</summary>
+    public string AnalysisDirectory => Path.Combine(AppPaths.DataDirectory, "analysis");
+
+    /// <summary>立即生成一份今天的分析报告（Markdown + JSON），返回 markdown 路径。</summary>
+    public string? WriteAnalysisReport()
+    {
+        if (_demo || _insights is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var report = ReportBuilder.Build(today, History, _insights);
+            var (markdownPath, jsonPath) = ReportBuilder.Write(report, AppPaths.DataDirectory);
+            SafeLog(LogLevel.Info, "分析报告已更新：" + markdownPath + " / " + jsonPath);
+            return markdownPath;
+        }
+        catch (Exception ex)
+        {
+            SafeLog(LogLevel.Warn, "生成分析报告失败", ex);
+            return null;
         }
     }
 
@@ -275,6 +321,28 @@ internal sealed class AppHost : IDisposable
             // 历史写失败不能影响采样线程
             SafeLog(LogLevel.Warn, "写入历史失败", ex);
         }
+
+        try
+        {
+            _analytics?.Feed(frame);
+            var events = _analytics?.DrainEvents();
+            if (events is { Count: > 0 })
+            {
+                _insights?.Append(events);
+
+                // 有 digest 时顺手刷新报告（最多每 5 分钟一次，避免频繁写盘）
+                if (events.Any(e => e.Kind == InsightKinds.Digest) &&
+                    (DateTime.UtcNow - _lastReportUtc).TotalMinutes >= 4)
+                {
+                    _lastReportUtc = DateTime.UtcNow;
+                    WriteAnalysisReport();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            SafeLog(LogLevel.Warn, "分析数据写入失败", ex);
+        }
     }
 
     /// <summary>停止采样并释放全部服务。</summary>
@@ -287,6 +355,22 @@ internal sealed class AppHost : IDisposable
 
         _disposed = true;
         Engine.FrameProduced -= OnFrameProduced;
+
+        try
+        {
+            _analytics?.Complete();
+            var remaining = _analytics?.DrainEvents();
+            if (remaining is { Count: > 0 })
+            {
+                _insights?.Append(remaining);
+            }
+
+            WriteAnalysisReport();
+        }
+        catch (Exception ex)
+        {
+            SafeLog(LogLevel.Warn, "收尾分析数据失败", ex);
+        }
 
         try
         {
@@ -304,6 +388,16 @@ internal sealed class AppHost : IDisposable
         catch (Exception ex)
         {
             SafeLog(LogLevel.Warn, "释放采样引擎失败", ex);
+        }
+
+        try
+        {
+            _insights?.Flush();
+            _insights?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            SafeLog(LogLevel.Warn, "释放分析存储失败", ex);
         }
 
         try

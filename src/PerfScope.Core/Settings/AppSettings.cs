@@ -205,6 +205,32 @@ public sealed class AppSettings
     /// <summary>同一告警的最小间隔（秒），防止刷屏。范围 30~3600，默认 300。</summary>
     public int AlertCooldownSeconds { get; set; } = 300;
 
+    // ================= 智能分析 =================
+
+    /// <summary>是否持续产出分析历史（事件流 + 窗口摘要 + 可读报告）。</summary>
+    public bool InsightEnabled { get; set; } = true;
+
+    /// <summary>应用 CPU 片段阈值（整机百分比）。范围 1~100，默认 25。</summary>
+    public int InsightAppCpuPercent { get; set; } = 25;
+
+    /// <summary>应用 CPU 片段最短持续秒数。范围 5~600，默认 20。</summary>
+    public int InsightAppCpuSeconds { get; set; } = 20;
+
+    /// <summary>内存增长判定阈值（MB/分钟）。范围 5~10000，默认 50。</summary>
+    public int InsightMemoryGrowthMbPerMinute { get; set; } = 50;
+
+    /// <summary>整机 CPU 高负载阈值（百分比）。范围 10~100，默认 80。</summary>
+    public int InsightSystemCpuPercent { get; set; } = 80;
+
+    /// <summary>系统级片段最短持续秒数。范围 5~600，默认 30。</summary>
+    public int InsightSystemCpuSeconds { get; set; } = 30;
+
+    /// <summary>可用内存低于该百分比视为内存压力。范围 1~50，默认 8。</summary>
+    public int InsightLowMemoryPercent { get; set; } = 8;
+
+    /// <summary>摘要窗口分钟数。范围 1~60，默认 5。</summary>
+    public int InsightDigestMinutes { get; set; } = 5;
+
     // ================= 诊断 =================
 
     /// <summary>日志级别。</summary>
@@ -274,6 +300,14 @@ public sealed class AppSettings
         AlertCpuPercent = source.AlertCpuPercent;
         AlertMemoryPercent = source.AlertMemoryPercent;
         AlertCooldownSeconds = source.AlertCooldownSeconds;
+        InsightEnabled = source.InsightEnabled;
+        InsightAppCpuPercent = source.InsightAppCpuPercent;
+        InsightAppCpuSeconds = source.InsightAppCpuSeconds;
+        InsightMemoryGrowthMbPerMinute = source.InsightMemoryGrowthMbPerMinute;
+        InsightSystemCpuPercent = source.InsightSystemCpuPercent;
+        InsightSystemCpuSeconds = source.InsightSystemCpuSeconds;
+        InsightLowMemoryPercent = source.InsightLowMemoryPercent;
+        InsightDigestMinutes = source.InsightDigestMinutes;
         LogLevel = source.LogLevel;
         LogMaxKilobytes = source.LogMaxKilobytes;
     }

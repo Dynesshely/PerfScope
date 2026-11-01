@@ -3,6 +3,7 @@ using System.Text;
 using PerfScope.Core;
 using PerfScope.Core.Abstractions;
 using PerfScope.Core.History;
+using PerfScope.Core.Insights;
 using PerfScope.Core.Models;
 using PerfScope.Core.Native;
 using PerfScope.Core.Settings;
@@ -39,6 +40,11 @@ internal static class Program
         if (options.Benchmark)
         {
             return RunBenchmark(options);
+        }
+
+        if (options.Report)
+        {
+            return RunReport(options);
         }
 
         if (options.History)
@@ -175,6 +181,43 @@ internal static class Program
         }
 
         return completed ? 0 : 3;
+    }
+
+    /// <summary>生成 / 打印某天的分析报告（AI 可直接消费）。</summary>
+    private static int RunReport(CliOptions options)
+    {
+        var dataDir = options.DataDirectory ?? AppPaths.DataDirectory;
+        if (!Directory.Exists(dataDir))
+        {
+            Console.WriteLine("数据目录不存在：" + dataDir);
+            return 1;
+        }
+
+        var settings = new SettingsStore(NullLog.Instance, Path.Combine(dataDir, "settings.json")).Load();
+        using var history = new HistoryStore(settings, NullLog.Instance, Path.Combine(dataDir, "history"));
+        using var insights = new InsightStore(dataDir, NullLog.Instance);
+
+        var days = insights.AvailableDays();
+        var day = options.HistoryDay
+                  ?? (days.Count > 0 ? days[^1] : DateOnly.FromDateTime(DateTime.Now));
+        Console.WriteLine("分析文件目录：" + insights.DirectoryPath + "（可用日期 " + string.Join("、", days) + "）");
+
+        var report = ReportBuilder.Build(day, history, insights);
+        var (markdownPath, jsonPath) = ReportBuilder.Write(report, dataDir);
+
+        Console.WriteLine("已生成分析报告：");
+        Console.WriteLine("  Markdown : " + markdownPath);
+        Console.WriteLine("  JSON     : " + jsonPath);
+        Console.WriteLine();
+
+        if (options.Json)
+        {
+            Console.WriteLine(ReportBuilder.ToJson(report));
+            return 0;
+        }
+
+        Console.WriteLine(ReportBuilder.ToMarkdown(report));
+        return 0;
     }
 
     /// <summary>读取磁盘上的历史（分钟聚合），打印某天的应用用量排行。</summary>
@@ -330,6 +373,8 @@ internal sealed class CliOptions
 
     public bool ListProcesses { get; private set; }
 
+    public bool Report { get; private set; }
+
     public DateOnly? HistoryDay { get; private set; }
 
     public int BenchmarkRounds { get; private set; } = 10;
@@ -357,6 +402,9 @@ internal sealed class CliOptions
                     break;
                 case "--processes":
                     options.ListProcesses = true;
+                    break;
+                case "--report":
+                    options.Report = true;
                     break;
                 case "--history":
                     options.History = true;
@@ -403,6 +451,7 @@ internal sealed class CliOptions
         Console.WriteLine("  --rounds <N>        性能测试轮数（默认 10）");
         Console.WriteLine("  --data-dir <目录>   使用独立数据目录（不影响正式配置）");
         Console.WriteLine("  --processes         列出原始采集到的进程（排查归并 / 可见性）");
+        Console.WriteLine("  --report            生成当日分析报告（Markdown + JSON），--json 输出 JSON");
         Console.WriteLine("  --history           读取 --data-dir 下的历史，打印当日应用用量排行");
         Console.WriteLine("  --day <yyyy-MM-dd>  指定历史日期（默认最近一天）");
     }

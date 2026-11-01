@@ -259,6 +259,27 @@ internal sealed class MainForm : Form
         form.ShowDialog(this);
     }
 
+    /// <summary>生成分析报告并打开所在目录。</summary>
+    private void OpenAnalysis()
+    {
+        try
+        {
+            _host.WriteAnalysisReport();
+            var directory = _host.AnalysisDirectory;
+            if (Directory.Exists(directory))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(directory)
+                {
+                    UseShellExecute = true,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _host.SafeLog(LogLevel.Warn, "打开分析报告失败", ex);
+        }
+    }
+
     /// <summary>打开当天历史汇总。</summary>
     public void OpenHistory()
     {
@@ -318,9 +339,18 @@ internal sealed class MainForm : Form
         var historyButton = new ToolStripButton("历史")
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
+            Margin = new Padding(0, 0, Scaled(2), 0),
         };
         historyButton.Click += (_, _) => OpenHistory();
         toolbar.Items.Add(historyButton);
+
+        var analysisButton = new ToolStripButton("分析")
+        {
+            DisplayStyle = ToolStripItemDisplayStyle.Text,
+            ToolTipText = "生成并打开 AI 可读的资源分析报告",
+        };
+        analysisButton.Click += (_, _) => OpenAnalysis();
+        toolbar.Items.Add(analysisButton);
 
         _treemapButton = new ToolStripButton("分布视图")
         {

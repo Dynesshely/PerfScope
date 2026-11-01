@@ -46,6 +46,11 @@ internal sealed class SettingsForm : Form
     private readonly NumericUpDown _diskRetention;
     private readonly NumericUpDown _trendSlots;
     private readonly CheckBox _diskHistory;
+    private readonly CheckBox _insightEnabled;
+    private readonly NumericUpDown _insightCpuPercent;
+    private readonly NumericUpDown _insightCpuSeconds;
+    private readonly NumericUpDown _insightGrowth;
+    private readonly NumericUpDown _insightDigest;
 
     private readonly NumericUpDown _topN;
     private readonly CheckBox _startMinimized;
@@ -110,6 +115,11 @@ internal sealed class SettingsForm : Form
         _diskRetention = Num(0, 365, 1, _working.DiskRetentionDays);
         _trendSlots = Num(1, 64, 1, _working.TrendAppSlots);
         _diskHistory = Check("把历史写入磁盘（关闭后仅内存保留）", _working.EnableDiskHistory);
+        _insightEnabled = Check("持续产出分析历史（事件流 + 报告）", _working.InsightEnabled);
+        _insightCpuPercent = Num(1, 100, 1, _working.InsightAppCpuPercent);
+        _insightCpuSeconds = Num(5, 600, 5, _working.InsightAppCpuSeconds);
+        _insightGrowth = Num(5, 10000, 5, _working.InsightMemoryGrowthMbPerMinute);
+        _insightDigest = Num(1, 60, 1, _working.InsightDigestMinutes);
 
         _topN = Num(5, 200, 1, _working.TopN);
         _startMinimized = Check("启动时最小化到托盘", _working.StartMinimized);
@@ -180,6 +190,12 @@ internal sealed class SettingsForm : Form
         AddRow(retention, "磁盘保留（天）", _diskRetention);
         AddRow(retention, "趋势应用数", _trendSlots);
         AddRow(retention, "写入磁盘", _diskHistory);
+        AddSectionTitle(retention, "智能分析（产出可被 AI 直接消费的历史）");
+        AddRow(retention, "启用分析", _insightEnabled);
+        AddRow(retention, "CPU 片段阈值（%）", _insightCpuPercent);
+        AddRow(retention, "片段最短时长（秒）", _insightCpuSeconds);
+        AddRow(retention, "内存增长阈值（MB/分）", _insightGrowth);
+        AddRow(retention, "摘要窗口（分钟）", _insightDigest);
         tabs.TabPages.Add(retentionPage);
 
         var uiPage = new TabPage("界面") { BackColor = _theme.Background };
@@ -645,6 +661,11 @@ internal sealed class SettingsForm : Form
         SetNum(_diskRetention, _working.DiskRetentionDays);
         SetNum(_trendSlots, _working.TrendAppSlots);
         _diskHistory.Checked = _working.EnableDiskHistory;
+        _insightEnabled.Checked = _working.InsightEnabled;
+        SetNum(_insightCpuPercent, _working.InsightAppCpuPercent);
+        SetNum(_insightCpuSeconds, _working.InsightAppCpuSeconds);
+        SetNum(_insightGrowth, _working.InsightMemoryGrowthMbPerMinute);
+        SetNum(_insightDigest, _working.InsightDigestMinutes);
 
         SetNum(_topN, _working.TopN);
         _startMinimized.Checked = _working.StartMinimized;
@@ -745,6 +766,11 @@ internal sealed class SettingsForm : Form
         _working.DiskRetentionDays = (int)_diskRetention.Value;
         _working.TrendAppSlots = (int)_trendSlots.Value;
         _working.EnableDiskHistory = _diskHistory.Checked;
+        _working.InsightEnabled = _insightEnabled.Checked;
+        _working.InsightAppCpuPercent = (int)_insightCpuPercent.Value;
+        _working.InsightAppCpuSeconds = (int)_insightCpuSeconds.Value;
+        _working.InsightMemoryGrowthMbPerMinute = (int)_insightGrowth.Value;
+        _working.InsightDigestMinutes = (int)_insightDigest.Value;
 
         _working.TopN = (int)_topN.Value;
         _working.StartMinimized = _startMinimized.Checked;

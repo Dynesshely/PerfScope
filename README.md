@@ -117,6 +117,42 @@ PerfScope 是一个 Windows 桌面小工具，目标很明确：
 - 磁盘占用：每分钟每个活跃应用一条 32 字节记录，默认保留 30 天约 40 MB；日志按大小轮转（默认上限 512 KB）。
 - 权益：删掉 %LOCALAPPDATA%\PerfScope 即彻底清除。
 
+
+## 分析数据（给 AI 用）
+
+PerfScope 不只是把 2 秒一个的采样点存下来，而是**在算法层先压一遍**，产出结论型历史，模型可以直接读：
+
+| 文件 | 内容 |
+|---|---|
+| %LOCALAPPDATA%\PerfScope\insights\yyyy-MM-dd.jsonl | 事件流，一行一个 JSON：CPU 高占用片段、内存持续增长、整机高负载、内存压力、5 分钟窗口摘要（含 Top 应用排行） |
+| %LOCALAPPDATA%\PerfScope\analysis\yyyy-MM-dd-report.md | 当日分析报告：总体指标、应用排行、值得关注的事件、结论线索、给 AI 的提问建议、口径说明 |
+| %LOCALAPPDATA%\PerfScope\analysis\yyyy-MM-dd-report.json | 同一份报告的机器可读版，schema 为 `perfscope.report/v1`，字段稳定 |
+
+事件类型与语义：
+
+| kind | 含义 | 关键字段 |
+|---|---|---|
+| `session_start` | 一次会话开始 | `metrics.sampleIntervalSeconds` / `totalPhysicalMb` / `logicalProcessors` |
+| `app_cpu_episode` | 某应用 CPU 持续高于阈值（默认 25% 且 ≥20 秒） | `appName` `startUtc` `durationSeconds` `avgCpuPercent` `peakCpuPercent` `processCount` |
+| `app_memory_growth` | 某应用内存持续增长（默认 ≥50 MB/分钟，≥120 秒且累计 ≥150 MB） | `growthMbPerMinute` `peakMemoryMb` |
+| `system_cpu_episode` | 整机 CPU 持续高于阈值（默认 80% 且 ≥30 秒） | `durationSeconds` `avgCpuPercent` |
+| `system_memory_pressure` | 可用内存低于阈值（默认 8%） | `durationSeconds` |
+| `digest` | 5 分钟窗口摘要 | `apps[]`（Top 应用的平均/峰值 CPU、内存）、`metrics.systemCpuAvg` 等 |
+
+使用方式：
+
+~~~powershell
+# 应用内：工具栏「分析」→ 生成并打开报告目录
+# 命令行：生成当天报告并打印 Markdown
+PerfScope.Cli.exe --report
+# 机器可读输出
+PerfScope.Cli.exe --report --json
+~~~
+
+设计约束：事件流是**追加写**的 JSONL（崩溃最多丢最后一行），报告每 5 分钟自动刷新一次；
+百分比统一为整机口径（0~100，等于任务管理器），内存单位为 MB；
+报告不含原始采样，单个文件几十 KB，适合直接塞进模型上下文。
+
 ## 已知限制
 
 - 仅支持 Windows 10/11 x64（原生结构按 64 位布局）。
