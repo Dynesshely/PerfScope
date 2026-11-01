@@ -48,6 +48,27 @@ jobs:
           Set-ExecutionPolicy -Scope Process Bypass -Force
           ./scripts/run-tests.ps1 -Configuration Release
 
+      - name: Setup NSIS
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
+            choco install nsis --no-progress -y | Out-Host
+          }
+
+          $makensis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
+          if (-not $makensis) {
+            $candidates = @(
+              (Join-Path $env:ProgramFiles 'NSIS\makensis.exe'),
+              (Join-Path [Environment]::GetEnvironmentVariable('ProgramFiles(x86)') 'NSIS\makensis.exe')
+            )
+            $makensis = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          }
+
+          if (-not $makensis) { throw 'NSIS 安装失败：找不到 makensis' }
+          Write-Host "makensis: $makensis $( & $makensis /VERSION )"
+          Split-Path -Parent $makensis | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
       - name: Build portable zip and installer
         shell: pwsh
         run: |
