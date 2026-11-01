@@ -52,21 +52,20 @@ jobs:
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process Bypass -Force
-          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
-            choco install nsis --no-progress -y | Out-Host
-          }
-
           $makensis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
           if (-not $makensis) {
+            choco install nsis --no-progress -y | Out-Host
             $candidates = @(
-              (Join-Path $env:ProgramFiles 'NSIS\makensis.exe'),
-              (Join-Path [Environment]::GetEnvironmentVariable('ProgramFiles(x86)') 'NSIS\makensis.exe')
+              'C:\Program Files (x86)\NSIS\makensis.exe',
+              'C:\Program Files\NSIS\makensis.exe',
+              'C:\ProgramData\chocolatey\bin\makensis.exe'
             )
             $makensis = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
           }
 
           if (-not $makensis) { throw 'NSIS 安装失败：找不到 makensis' }
-          Write-Host "makensis: $makensis $( & $makensis /VERSION )"
+          $version = & $makensis /VERSION
+          Write-Host "makensis: $makensis （$version）"
           Split-Path -Parent $makensis | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
       - name: Build portable zip and installer
