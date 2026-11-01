@@ -106,12 +106,12 @@ internal sealed class AppHost : IDisposable
     public event EventHandler<bool>? PauseChanged;
 
     /// <summary>按运行模式创建服务。演示模式完全不触碰真实数据目录与注册表。</summary>
-    public static AppHost Create(bool demo)
+    public static AppHost Create(bool demo, bool mock = false)
     {
-        if (demo)
+        if (demo || mock)
         {
             var demoSettings = new AppSettings();
-            var demoEngine = new DemoEngine(demoSettings);
+            IMonitorEngine demoEngine = mock ? new MockEngine(demoSettings) : new DemoEngine(demoSettings);
             var demoHistory = new DemoHistory(demoSettings);
             var demoStore = new DemoSettingsStore(demoSettings);
             return new AppHost(demoSettings, demoStore, demoEngine, demoHistory, NullLog.Instance, demo: true);
@@ -266,8 +266,10 @@ internal sealed class AppHost : IDisposable
         }
     }
 
-    /// <summary>分析数据目录（report.md / report.json 所在位置）。</summary>
-    public string AnalysisDirectory => Path.Combine(AppPaths.DataDirectory, "analysis");
+    /// <summary>分析数据目录（report.md / report.json 所在位置）。演示 / 截图模式返回虚构路径。</summary>
+    public string AnalysisDirectory => _demo
+        ? @"C:\Users\you\AppData\Local\PerfScope\analysis\"
+        : Path.Combine(AppPaths.DataDirectory, "analysis");
 
     /// <summary>构建今天的分析报告对象（不落盘）。</summary>
     public InsightReport? BuildReport()
@@ -316,6 +318,30 @@ internal sealed class AppHost : IDisposable
     public string BuildAgentPrompt()
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
+
+        if (_demo)
+        {
+            // 演示 / 截图模式：不读取真实数据，给一份虚构但结构完整的 Prompt，
+            // 保证对外材料里不出现任何真实路径或应用名。
+            var sample = new AgentPromptContext(
+                today,
+                @"C:\Users\you\AppData\Local\PerfScope\analysis\" + today.ToString("yyyy-MM-dd") + "-report.json",
+                @"C:\Users\you\AppData\Local\PerfScope\analysis\" + today.ToString("yyyy-MM-dd") + "-report.md",
+                @"C:\Users\you\AppData\Local\PerfScope\insights\" + today.ToString("yyyy-MM-dd") + ".jsonl",
+                @"C:\Users\you\AppData\Local\PerfScope\analysis\",
+                16,
+                42,
+                8,
+                2.0,
+                32.0,
+                new[]
+                {
+                    "CPU 消耗最多：**Aurora Browser**，累计 692 秒（平均 6.4%）。",
+                    "内存峰值最高：**Terra Game**，峰值 5200 MB。",
+                    "共 9 段 CPU 高占用片段，最重的一段来自 **Studio Suite**（14:22 起，持续 6.5 分钟，均值 8.1%）。",
+                });
+            return AgentPromptBuilder.Build(sample);
+        }
         var report = BuildReport();
         if (report is not null)
         {

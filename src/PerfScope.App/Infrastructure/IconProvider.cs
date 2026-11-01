@@ -32,15 +32,17 @@ internal sealed class IconProvider : IDisposable
                 return cached;
             }
 
+            // 取不到图标（路径不存在 / 没有图标资源）时不要缓存 null：
+            // 否则同一路径第二次会直接命中空缓存，连首字母色块兜底也被跳过。
             Bitmap? loaded = File.Exists(path) ? LoadFromExecutable(path, size) : null;
-            if (_iconCache.Count >= MaxCachedIcons)
-            {
-                ClearIconCache();
-            }
-
-            _iconCache[path] = loaded;
             if (loaded is not null)
             {
+                if (_iconCache.Count >= MaxCachedIcons)
+                {
+                    ClearIconCache();
+                }
+
+                _iconCache[path] = loaded;
                 return loaded;
             }
         }

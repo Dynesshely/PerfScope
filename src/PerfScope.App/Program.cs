@@ -18,7 +18,8 @@ internal static class Program
         ApplyDataDirArgument(args);
 
         int selfTestSeconds = ParseSecondsArgument(args, "--selftest");
-        _isDemo = HasFlag(args, "--demo");
+        _isDemo = HasFlag(args, "--demo") || HasFlag(args, "--mock");
+        bool isMock = HasFlag(args, "--mock");
         Infrastructure.UiDebug.HoverDemo = HasFlag(args, "--hover-demo");
         Infrastructure.UiDebug.OpenAgentOnStart = HasFlag(args, "--open-agent");
 
@@ -38,7 +39,7 @@ internal static class Program
         AppHost host;
         try
         {
-            host = AppHost.Create(_isDemo);
+            host = AppHost.Create(_isDemo, isMock);
         }
         catch (Exception ex)
         {

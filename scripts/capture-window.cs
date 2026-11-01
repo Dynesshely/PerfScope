@@ -18,28 +18,37 @@ if (args.Length < 2)
 // 在 150% 缩放下只能截到窗口左上角的一部分（表现为右侧列"消失"）。
 NativeMethods.SetProcessDpiAwarenessContext(new IntPtr(-4));
 
-var pid = int.Parse(args[0]);
 var output = Path.GetFullPath(args[1]);
 if (Path.GetDirectoryName(output) is { } dir)
 {
     Directory.CreateDirectory(dir);
 }
 
-using var process = System.Diagnostics.Process.GetProcessById(pid);
+// 支持直接传窗口句柄（hwnd:123456），用于截取模态对话框等非主窗口。
 var handle = IntPtr.Zero;
-for (var i = 0; i < 40 && handle == IntPtr.Zero; i++)
+System.Diagnostics.Process? process = null;
+if (args[0].StartsWith("hwnd:", StringComparison.OrdinalIgnoreCase))
 {
-    process.Refresh();
-    handle = process.MainWindowHandle;
-    if (handle == IntPtr.Zero)
+    handle = new IntPtr(long.Parse(args[0][5..]));
+}
+else
+{
+    process = System.Diagnostics.Process.GetProcessById(int.Parse(args[0]));
+    for (var i = 0; i < 40 && handle == IntPtr.Zero; i++)
     {
-        Thread.Sleep(250);
+        process.Refresh();
+        handle = process.MainWindowHandle;
+        if (handle == IntPtr.Zero)
+        {
+            Thread.Sleep(250);
+        }
     }
 }
 
 if (handle == IntPtr.Zero)
 {
     Console.WriteLine("窗口句柄为 0（窗口可能未创建或已隐藏）");
+    process?.Dispose();
     return 2;
 }
 
