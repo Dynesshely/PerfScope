@@ -32,7 +32,12 @@ try {
     if ($Publish) {
         $dist = Join-Path $root 'dist'
         Write-Host "==> 发布到 $dist" -ForegroundColor Cyan
-        if (Test-Path $dist) { Remove-Item -Recurse -Force $dist }
+        $resolvedDist = [System.IO.Path]::GetFullPath($dist)
+        if ($resolvedDist -ne [System.IO.Path]::GetFullPath((Join-Path $root 'dist'))) {
+            throw "发布目录异常：$resolvedDist"
+        }
+
+        if (Test-Path -LiteralPath $resolvedDist) { Remove-Item -LiteralPath $resolvedDist -Recurse -Force }
         $publishArgs = @(
             'publish', 'src\PerfScope.App\PerfScope.App.csproj',
             '-c', 'Release', '-r', 'win-x64', '--self-contained', 'false',

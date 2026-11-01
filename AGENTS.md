@@ -39,9 +39,18 @@
 | 自身开销实测 | `.\scripts\measure.ps1 -Seconds 60` |
 | 无界面冒烟 | `PerfScope.Cli.exe --frames 4 --interval 1500 --top 15` |
 | 文档截图 | `.\scripts\mock-screenshots.ps1`（`--mock` 虚构数据，不含真实信息） |
+| 发布打包 | `.\scripts\package.ps1 -Version 1.0.0` → `dist\release`（portable zip + NSIS 安装包 + 校验和） |
+| 安装包脚本 | `installer\PerfScope.nsi`（NSIS 3，按用户安装到 %LOCALAPPDATA%，无需管理员） |
 
 本机 `dotnet test` 不可用：VSTest testhost 启动时需要打开父进程句柄，会被当前环境拒绝（`Win32Exception (5)`）。
 必须用仓库内的反射运行器 `tests\PerfScope.TestRunner`（`.\scripts\run-tests.ps1` 已封装）。
+
+## 发布
+
+- 发版只需推 tag：`git tag v1.0.0 && git push origin v1.0.0`，`.github/workflows/release.yml` 会跑测试、
+  打包并创建 GitHub Release（portable zip + NSIS 安装包 + SHA256SUMS；带 `-` 的 tag 视为预发布）。
+- 发布产物是 **self-contained 单文件**（内置 .NET 运行时），用户机器无需安装运行时。
+- 版本号由 tag 决定，通过 `-p:Version` 注入程序集，界面右下角显示的版本即来自这里。
 
 ## 环境注意事项
 

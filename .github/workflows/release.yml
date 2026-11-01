@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build & publish release
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version from tag
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          $tag = $env:GITHUB_REF_NAME
+          $version = $tag.TrimStart('v', 'V')
+          if ($version -notmatch '^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
+            throw "标签不是合法的语义化版本：$tag"
+          }
+
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "IS_PRERELEASE=$($version.Contains('-'))" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "发布版本：$version"
+
+      - name: Run tests
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          ./scripts/run-tests.ps1 -Configuration Release
+
+      - name: Build portable zip and installer
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          ./scripts/package.ps1 -Version $env:VERSION -SkipTests
+
+      - name: Verify outputs
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem 'dist/release' -File
+          $files | ForEach-Object { '    {0,10:N0} KB  {1}' -f ($_.Length / 1KB), $_.Name }
+          if (-not ($files.Name -match 'portable\.zip$')) { throw '缺少 portable zip' }
+          if (-not ($files.Name -match 'Setup-.*\.exe$')) { throw '缺少安装包' }
+          if (-not (Test-Path 'dist/release/SHA256SUMS.txt')) { throw '缺少校验和文件' }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: perfscope-${{ env.VERSION }}
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PerfScope ${{ env.VERSION }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ env.IS_PRERELEASE == 'True' }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/release/PerfScope-*-win-x64-portable.zip
+            dist/release/PerfScope-Setup-*-win-x64.exe
+            dist/release/SHA256SUMS.txt

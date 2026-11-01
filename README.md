@@ -11,6 +11,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white" />
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="Dependencies" src="https://img.shields.io/badge/third--party%20dependencies-0-8B5CF6?style=flat-square" />
+  <a href="https://github.com/Dynesshely/PerfScope/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Dynesshely/PerfScope?style=flat-square&color=22C55E" /></a>
   <img alt="License" src="https://img.shields.io/badge/license-MIT-F59E0B?style=flat-square" />
 </p>
 
@@ -66,13 +67,23 @@ The window remembers its size, the splitter ratio and the active distribution ta
 
 ## Installation
 
-**Requirements** — Windows 10 or Windows 11 (x64). No runtime, no installer, no administrator rights.
+**Requirements** — Windows 10 or Windows 11 (x64). No .NET runtime, no administrator rights.
 
-1. Download the latest `PerfScope.exe` from the [Releases](https://github.com/Dynesshely/PerfScope/releases) page.
-2. Put it anywhere you like and run it.
-3. Optionally enable *Run at startup* in Settings.
+Every tagged release publishes two flavours on the [Releases](https://github.com/Dynesshely/PerfScope/releases) page:
 
-Data stays on your machine, under `%LOCALAPPDATA%\PerfScope`. To keep everything portable — for example on a USB drive — start it with `PerfScope.exe --data-dir <folder>`.
+| Package | Best for |
+|---|---|
+| **PerfScope-Setup-x.y.z-win-x64.exe** | Regular use. Installs per-user into %LOCALAPPDATA%\Programs\PerfScope, adds a Start menu shortcut, registers a clean uninstaller. |
+| **PerfScope-x.y.z-win-x64-portable.zip** | USB drives, locked-down machines, or simply trying it out — unzip and run PerfScope.exe. |
+
+Each release also ships `SHA256SUMS.txt` so downloads can be verified:
+
+~~~powershell
+Get-FileHash .\PerfScope-Setup-1.0.0-win-x64.exe -Algorithm SHA256
+~~~
+
+Settings and history live in `%LOCALAPPDATA%\PerfScope`. To keep everything portable, start the app with
+`PerfScope.exe --data-dir <folder>`.
 
 ## How to Dev
 
@@ -94,6 +105,20 @@ dotnet run --project src/PerfScope.App   # run the app
 ~~~powershell
 dotnet run --project src/PerfScope.App -- --mock
 .\scripts\mock-screenshots.ps1           # regenerate docs/images from mock data
+~~~
+
+**Releases** are produced entirely by CI: push a semver tag and the workflow builds, tests, packages and
+publishes both artefacts to GitHub Releases.
+
+~~~powershell
+git tag v1.0.0
+git push origin v1.0.0
+~~~
+
+To build the same artefacts locally:
+
+~~~powershell
+.\scripts\package.ps1 -Version 1.0.0   # dist\release: portable zip + NSIS installer + SHA256SUMS
 ~~~
 
 Project conventions, coding style and the release checklist live in [AGENTS.md](AGENTS.md).
