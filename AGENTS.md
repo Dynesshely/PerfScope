@@ -38,6 +38,7 @@
 | 发布单文件 | `.\scripts\build.ps1 -Publish` → `dist\PerfScope.exe` |
 | 自身开销实测 | `.\scripts\measure.ps1 -Seconds 60` |
 | 无界面冒烟 | `PerfScope.Cli.exe --frames 4 --interval 1500 --top 15` |
+| 文档截图 | `.\scripts\mock-screenshots.ps1`（`--mock` 虚构数据，不含真实信息） |
 
 本机 `dotnet test` 不可用：VSTest testhost 启动时需要打开父进程句柄，会被当前环境拒绝（`Win32Exception (5)`）。
 必须用仓库内的反射运行器 `tests\PerfScope.TestRunner`（`.\scripts\run-tests.ps1` 已封装）。
