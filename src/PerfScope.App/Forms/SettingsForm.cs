@@ -320,6 +320,8 @@ internal sealed class SettingsForm : Form
 
     private TableLayoutPanel CreateContent(TabPage page)
     {
+        // 用原生 AutoScroll：自绘滚动容器的内容高度测量在 TableLayoutPanel + Dock.Top 组合下不稳定，
+        // 先保证「能滚动、内容可达」，滚动条样式统一留作后续工作。
         var scroll = new Panel
         {
             Dock = DockStyle.Fill,
