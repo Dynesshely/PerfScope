@@ -43,6 +43,34 @@ public sealed class SystemModuleTests
     }
 
     [Fact]
+    public void 驱动与固件类进程归入驱动与固件()
+    {
+        var classifier = CreateClassifier();
+
+        var ati = classifier.Classify(Proc(810, "atieclxx.exe", @"C:\Windows\System32\atieclxx.exe"), null);
+        var asus = classifier.Classify(Proc(811, "ArmouryDevice.exe", @"C:\Program Files\ASUS\ArmouryDevice\ArmouryDevice.exe"), null);
+        var store = classifier.Classify(Proc(812, "helper.exe", @"C:\Windows\System32\DriverStore\FileRepository\oem12.inf_amd64\helper.exe"), null);
+        var aggregator = classifier.Classify(Proc(813, "aggregatorhost.exe", @"C:\Windows\System32\aggregatorhost.exe"), null);
+
+        Assert.Equal("sysmod:drivers", ati.Key);
+        Assert.Equal("驱动与固件", ati.DisplayName);
+        Assert.Equal("sysmod:drivers", asus.Key);
+        Assert.Equal("sysmod:drivers", store.Key);
+        Assert.Equal("sysmod:drivers", aggregator.Key);
+    }
+
+    [Fact]
+    public void 显卡驱动仍归入图形界面而不是驱动与固件()
+    {
+        var classifier = CreateClassifier();
+
+        var nv = classifier.Classify(Proc(820, "nvcontainer.exe", @"C:\Program Files\NVIDIA Corporation\NvContainer\nvcontainer.exe"), null);
+
+        Assert.Equal("sysmod:graphics", nv.Key);
+        Assert.Equal("图形界面与显卡驱动", nv.DisplayName);
+    }
+
+    [Fact]
     public void 桌面窗口管理器归入图形界面()
     {
         var classifier = CreateClassifier();

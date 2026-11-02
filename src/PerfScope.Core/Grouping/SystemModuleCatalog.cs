@@ -54,6 +54,32 @@ internal static class SystemModuleCatalog
             },
             new[] { @"\nvidia corporation\", @"\amd\cnext\", @"\radeon\" }),
 
+        // 驱动服务 / OEM 固件助手：名字通常是 atieclxx、amdpkgsvc、ArmouryDevice 这类，用户看不出是什么。
+        // 放在图形之后，保证 nvcontainer / RadeonSoftware 之类仍归到「图形界面与显卡驱动」。
+        new(
+            "drivers",
+            "驱动与固件",
+            "系统模块：驱动服务与 OEM 硬件助手（Armoury Crate、AMD / ATI 驱动服务、Realtek、DriverStore 等）",
+            new[]
+            {
+                "aggregatorhost", "armoury", "armourycrate", "armourydevice", "armouryhandleguard",
+                "armouryliveservice", "lightingservice", "aacambientlighting",
+                "aac3572drambal", "aac3572dramhal_x86", "aac3572mbhal_x86", "aackingstondramhal_x86",
+                "atkexcomsvc", "atkexcom", "atkwmiacpi", "asuscertservice", "asusupdateservice",
+                "asusupdatecheck", "asusoptimizationservice", "asusmainservice", "asuscertmanager",
+                "atieclxx", "atiesrxx", "amdpkgsvc", "amdappcompatsvc", "amdow", "amduw23g",
+                "rtkaudioservice", "rtkauduservice", "rtkbtman4", "rtkng", "ravbg64", "rtkvgm",
+                "etdservice", "etdcctrl", "etdctrl", "hidfilter", "ipfsvc",
+            },
+            new[]
+            {
+                @"\driverstore\",
+                @"\program files\asus\", @"\program files (x86)\asus\",
+                @"\program files\amd\", @"\program files\ati technologies\",
+                @"\program files\realtek\", @"\program files (x86)\realtek\",
+                @"\program data\asus\",
+            }),
+
         new(
             "security",
             "安全与防护",
@@ -169,7 +195,8 @@ internal static class SystemModuleCatalog
         {
             foreach (var (fragment, candidate) in ByPath)
             {
-                if (path.Contains(fragment, StringComparison.Ordinal))
+                // 路径没有统一转小写，必须忽略大小写比较，否则 DriverStore 之类永远匹配不到
+                if (path.Contains(fragment, StringComparison.OrdinalIgnoreCase))
                 {
                     identity = new AppIdentity(
                         KeyPrefix + candidate.Id,
