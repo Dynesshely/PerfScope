@@ -71,6 +71,12 @@ internal sealed class AppListControl : Control
     private int _scrollOffset;
     private int _selectedIndex = -1;
     private int _hoverIndex = -1;
+
+    // 子项悬停时的自绘提示（完整可执行文件路径）
+    private int _tipRow = -1;
+    private string? _tipTitle;
+    private string? _tipDetail;
+    private Point _tipPoint;
     private long _totalPhysicalBytes;
 
     /// <summary>创建应用列表控件。</summary>
@@ -253,6 +259,15 @@ internal sealed class AppListControl : Control
         }
 
         _filtered.Sort(BuildComparison());
+
+        if (UiDebug.ExpandFirstGroup && _expanded.Count == 0 && _filtered.Count > 0)
+        {
+            var first = _filtered.FirstOrDefault(app => app.Processes is { Length: > 0 });
+            if (first is not null)
+            {
+                _expanded.Add(first.Key);
+            }
+        }
 
         _rows.Clear();
         int limit = Math.Clamp(TopN, 1, 200);
@@ -439,6 +454,26 @@ internal sealed class AppListControl : Control
         }
 
         graphics.ResetClip();
+
+        if (UiDebug.ForceListTooltip && _tipRow < 0)
+        {
+            // 仅截图 / 自动化验证：把提示固定挂在第一个子项上
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var row = _rows[i];
+                if (row.IsProcess && !string.IsNullOrWhiteSpace(row.Process.ExecutablePath))
+                {
+                    _tipRow = i;
+                    _tipTitle = row.Process.Name + "  ·  PID " + row.Process.Pid.ToString(System.Globalization.CultureInfo.CurrentCulture);
+                    _tipDetail = row.Process.ExecutablePath;
+                    int top = contentTop + i * _rowHeight - _scrollOffset;
+                    _tipPoint = new Point(Dp(360), top + _rowHeight / 2);
+                    break;
+                }
+            }
+        }
+
+        DrawHoverTooltip(graphics);
     }
 
     private void DrawHeader(Graphics graphics, int width)
@@ -528,7 +563,7 @@ internal sealed class AppListControl : Control
         int centerY = rowRect.Y + rowRect.Height / 2;
         DrawChevron(graphics, chevronX + Dp(7), centerY, expanded);
 
-        int iconX = chevronX + Dp(12);
+        int iconX = chevronX + Dp(21);
         var icon = _icons.GetIcon(app.IconSourcePath ?? app.RootPath, app.DisplayName, iconSize);
         if (icon is not null)
         {
@@ -681,6 +716,138 @@ internal sealed class AppListControl : Control
     /// 展开 / 折叠箭头：用系统图标字体（Segoe Fluent Icons / MDL2 Assets）绘制字形，
     /// 比手绘折线在任意 DPI 下更锐利，也不再需要单独的画笔资源。
     /// </summary>
+    /// <summary>进程行悬停提示：深色圆角卡片，显示进程名、PID 与完整可执行文件路径。</summary>
+    private void DrawHoverTooltip(Graphics graphics)
+    {
+        if (_tipRow < 0 || string.IsNullOrEmpty(_tipTitle) || string.IsNullOrEmpty(_tipDetail))
+        {
+            return;
+        }
+
+        int maxWidth = Math.Min(Dp(620), Math.Max(Dp(240), Width - Dp(48)));
+        var titleSize = TextRenderer.MeasureText(graphics, _tipTitle, _theme.SmallFont, new Size(maxWidth, int.MaxValue), TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
+        var lines = WrapText(graphics, _tipDetail, _theme.SmallFont, maxWidth - Dp(20));
+
+        int pad = Dp(10);
+        int lineHeight = TextRenderer.MeasureText(graphics, "国Ag", _theme.SmallFont).Height;
+        int contentWidth = titleSize.Width;
+        foreach (var line in lines)
+        {
+            contentWidth = Math.Max(contentWidth, TextRenderer.MeasureText(graphics, line, _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width);
+        }
+
+        int width = Math.Min(maxWidth, contentWidth + pad * 2);
+        int height = pad * 2 + titleSize.Height + Dp(4) + lines.Count * lineHeight;
+
+        int x = _tipPoint.X + Dp(18);
+        int y = _tipPoint.Y + Dp(20);
+        if (x + width > Width - Dp(6))
+        {
+            x = Math.Max(Dp(6), _tipPoint.X - width - Dp(12));
+        }
+
+        if (y + height > Height - Dp(6))
+        {
+            y = Math.Max(Dp(6), _tipPoint.Y - height - Dp(12));
+        }
+
+        var card = new Rectangle(x, y, width, height);
+        var previousSmoothing = graphics.SmoothingMode;
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using (var shadowPath = RoundedRect(new Rectangle(card.X + 1, card.Y + Dp(2), card.Width, card.Height), Dp(6)))
+        using (var shadow = new SolidBrush(Color.FromArgb(_theme.IsDark ? 90 : 45, 0, 0, 0)))
+        {
+            graphics.FillPath(shadow, shadowPath);
+        }
+
+        using (var path = RoundedRect(card, Dp(6)))
+        using (var fill = new SolidBrush(_theme.IsDark ? Color.FromArgb(44, 49, 59) : Color.White))
+        using (var border = new Pen(_theme.Border))
+        {
+            graphics.FillPath(fill, path);
+            graphics.DrawPath(border, path);
+        }
+
+        graphics.SmoothingMode = previousSmoothing;
+
+        int textLeft = card.X + pad;
+        int textTop = card.Y + pad;
+        TextRenderer.DrawText(
+            graphics,
+            _tipTitle,
+            _theme.SmallFont,
+            new Rectangle(textLeft, textTop, card.Width - pad * 2, titleSize.Height),
+            _theme.TextMuted,
+            TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+        textTop += titleSize.Height + Dp(4);
+
+        foreach (var line in lines)
+        {
+            TextRenderer.DrawText(
+                graphics,
+                line,
+                _theme.SmallFont,
+                new Rectangle(textLeft, textTop, card.Width - pad * 2, lineHeight),
+                _theme.TextPrimary,
+                TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+            textTop += lineHeight;
+        }
+    }
+
+    /// <summary>按像素宽度把长路径切成多行（优先在路径分隔符处换行）。</summary>
+    private List<string> WrapText(Graphics graphics, string text, Font font, int maxWidth)
+    {
+        var lines = new List<string>(4);
+        if (maxWidth <= Dp(20) || string.IsNullOrEmpty(text))
+        {
+            lines.Add(text ?? string.Empty);
+            return lines;
+        }
+
+        string remaining = text;
+        while (remaining.Length > 0 && lines.Count < 6)
+        {
+            int fit = remaining.Length;
+            while (fit > 1 &&
+                   TextRenderer.MeasureText(graphics, remaining[..fit], font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width > maxWidth)
+            {
+                fit--;
+            }
+
+            if (fit < remaining.Length)
+            {
+                int split = remaining.LastIndexOf('\\', Math.Max(0, fit - 1));
+                if (split > fit / 3)
+                {
+                    fit = split + 1;
+                }
+            }
+
+            lines.Add(remaining[..fit]);
+            remaining = remaining[fit..];
+        }
+
+        if (remaining.Length > 0)
+        {
+            lines.Add("…" + remaining);
+        }
+
+        return lines;
+    }
+
+    private static GraphicsPath RoundedRect(Rectangle bounds, int radius)
+    {
+        var path = new GraphicsPath();
+        int diameter = Math.Max(2, radius * 2);
+        path.AddArc(bounds.X, bounds.Y, diameter, diameter, 180, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Y, diameter, diameter, 270, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+        path.AddArc(bounds.X, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
     private void DrawChevron(Graphics graphics, int centerX, int centerY, bool expanded)
     {
         _chevronFont ??= IconFont.Create(8f * (DeviceDpi / 96f));
@@ -794,15 +961,42 @@ internal sealed class AppListControl : Control
             _hoverIndex = index;
             Invalidate();
         }
+
+        // 子项（进程行）悬停：显示完整路径的自绘提示
+        int tipRow = -1;
+        string? title = null;
+        string? detail = null;
+        if (index >= 0 && index < _rows.Count)
+        {
+            var row = _rows[index];
+            if (row.IsProcess && !string.IsNullOrWhiteSpace(row.Process.ExecutablePath))
+            {
+                tipRow = index;
+                title = row.Process.Name + "  ·  PID " + row.Process.Pid.ToString(System.Globalization.CultureInfo.CurrentCulture);
+                detail = row.Process.ExecutablePath;
+            }
+        }
+
+        if (tipRow != _tipRow || _tipPoint != e.Location)
+        {
+            _tipRow = tipRow;
+            _tipTitle = title;
+            _tipDetail = detail;
+            _tipPoint = e.Location;
+            Invalidate();
+        }
     }
 
     /// <inheritdoc />
     protected override void OnMouseLeave(EventArgs e)
     {
         base.OnMouseLeave(e);
-        if (_hoverIndex != -1)
+        if (_hoverIndex != -1 || _tipRow != -1)
         {
             _hoverIndex = -1;
+            _tipRow = -1;
+            _tipTitle = null;
+            _tipDetail = null;
             Invalidate();
         }
     }

@@ -18,4 +18,10 @@ internal static class UiDebug
 
     /// <summary>打开设置窗口时默认选中的标签页索引（-1 表示不指定）。</summary>
     public static int SettingsTabIndex { get; set; } = -1;
+
+    /// <summary>启动后自动展开第一个应用分组（仅截图 / 自动化验证用）。</summary>
+    public static bool ExpandFirstGroup { get; set; }
+
+    /// <summary>强制显示列表子项的悬停提示（仅截图 / 自动化验证用）。</summary>
+    public static bool ForceListTooltip { get; set; }
 }

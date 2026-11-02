@@ -308,9 +308,8 @@ internal sealed class SettingsForm : Form
 
     private ComboBox Combo(string[] items, int index)
     {
-        var combo = new ComboBox
+        var combo = new ThemedComboBox(_theme)
         {
-            DropDownStyle = ComboBoxStyle.DropDownList,
             Width = Scaled(300),
         };
         combo.Items.AddRange(items);

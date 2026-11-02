@@ -31,6 +31,22 @@ internal static class FormStyler
         }
 
         ApplyTo(root, theme);
+
+        // 系统滚动条跟随深色主题（uxtheme）：比自绘滚动条稳定，且覆盖所有滚动区域
+        void ApplyScrollbars()
+        {
+            DarkModeInterop.ApplyScrollbars(root, theme.IsDark);
+        }
+
+        if (root.IsHandleCreated)
+        {
+            ApplyScrollbars();
+        }
+
+        if (root is Form host)
+        {
+            host.Shown += (_, _) => ApplyScrollbars();
+        }
     }
 
     private static void OnFormHandleCreated(object? sender, EventArgs e)

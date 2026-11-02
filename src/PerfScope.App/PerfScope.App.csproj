@@ -13,7 +13,7 @@
     <AssemblyTitle>PerfScope 应用级资源监控</AssemblyTitle>
     <Description>轻量常驻的 CPU / 内存监控工具，按应用聚合进程占用</Description>
     <Company>PerfScope</Company>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Copyright>Copyright © 2026</Copyright>
     <SelfContained>false</SelfContained>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
