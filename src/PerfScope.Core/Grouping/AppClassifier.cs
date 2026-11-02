@@ -217,7 +217,7 @@ public sealed class AppClassifier : IAppClassifier
         if (snapshot.GroupByProductName)
         {
             var version = GetVersion(path, snapshot, nowMs);
-            if (TryProductIdentity(version, imageLower, exeBase) is { } productIdentity)
+            if (TryProductIdentity(version, imageLower, exeBase, ChannelDetector.Detect(path)) is { } productIdentity)
             {
                 var productRoot = GetInstallRoot(path, nowMs);
                 if (productRoot is { Kind: AppKind.InstallRoot } realRoot)
@@ -531,7 +531,7 @@ public sealed class AppClassifier : IAppClassifier
         return false;
     }
 
-    private static AppIdentity? TryProductIdentity(ExeVersionInfo version, string imageLower, string exeBase)
+    private static AppIdentity? TryProductIdentity(ExeVersionInfo version, string imageLower, string exeBase, string? channel)
     {
         var product = AppNameSanitizer.CleanName(version.ProductName);
         if (AppNameSanitizer.IsMeaninglessProductName(product, version.ProductName, version, imageLower, exeBase))
@@ -541,11 +541,21 @@ public sealed class AppClassifier : IAppClassifier
 
         var company = AppNameSanitizer.CleanName(version.CompanyName);
         var keyBody = company is null ? product! : company + "|" + product;
+        var displayName = product!;
         var reason = company is null
             ? $"版本信息 ProductName「{product}」"
             : $"版本信息 ProductName「{product}」+ CompanyName「{company}」";
 
-        return new AppIdentity("product:" + keyBody.ToLowerInvariant(), product!, null, AppKind.ProductName, reason);
+        // 同一产品的不同发行通道（Beta / Dev / Canary…）产品名完全一样，
+        // 必须把通道并进 Key，否则会把稳定版和测试版算成一个应用。
+        if (!string.IsNullOrEmpty(channel))
+        {
+            keyBody += "|" + channel;
+            displayName = product + " " + channel;
+            reason += $"（{channel} 通道，安装目录含通道标记）";
+        }
+
+        return new AppIdentity("product:" + keyBody.ToLowerInvariant(), displayName, null, AppKind.ProductName, reason);
     }
 
     /// <summary>

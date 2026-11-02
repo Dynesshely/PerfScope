@@ -256,9 +256,11 @@ internal sealed class SystemHeaderControl : Control
             sparkWidth,
             sparkHeight);
 
-        // 预留给坐标轴：左侧刻度、底部时间标签（平时不画，悬停时才显示，但空间一直保留，避免布局跳动）
-        int axisLeft = Dp(30);
-        int axisBottom = Dp(15);
+        // 预留给坐标轴：左侧刻度、底部时间标签（平时不画，悬停时才显示，但空间一直保留，避免布局跳动）。
+        // 宽度/高度按实测文字尺寸算，避免 150% DPI 下 "100" 被裁成 "00"。
+        var axisLabelSize = TextRenderer.MeasureText(graphics, "100", _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
+        int axisLeft = axisLabelSize.Width + Dp(12);
+        int axisBottom = axisLabelSize.Height + Dp(6);
         var plot = new Rectangle(
             sparkRect.X + axisLeft,
             sparkRect.Y,
@@ -351,7 +353,9 @@ internal sealed class SystemHeaderControl : Control
             return;
         }
 
-        // Y 轴：0 / 50 / 100 三条网格线与刻度
+        // Y 轴：0 / 50 / 100 三条网格线与刻度（刻度宽度按实测文字宽度预留，右对齐）
+        var axisLabelSize = TextRenderer.MeasureText(graphics, "100", _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
+        int labelWidth = axisLabelSize.Width + Dp(6);
         for (int i = 0; i <= 2; i++)
         {
             int y = plot.Bottom - (int)Math.Round(plot.Height * i / 2.0);
@@ -364,7 +368,7 @@ internal sealed class SystemHeaderControl : Control
                 graphics,
                 (i * 50).ToString(System.Globalization.CultureInfo.CurrentCulture),
                 _theme.SmallFont,
-                new Rectangle(plot.Left - Dp(28), y - Dp(7), Dp(24), Dp(14)),
+                new Rectangle(plot.Left - Dp(4) - labelWidth, y - axisLabelSize.Height / 2, labelWidth, axisLabelSize.Height),
                 _theme.TextMuted,
                 TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
         }
@@ -374,18 +378,22 @@ internal sealed class SystemHeaderControl : Control
         string spanText = span.TotalSeconds >= 90
             ? "-" + (span.TotalSeconds / 60).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " 分"
             : "-" + span.TotalSeconds.ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " 秒";
+        int xLabelTop = plot.Bottom + Dp(3);
+        int xLabelWidth = Math.Max(Dp(56), TextRenderer.MeasureText(graphics, spanText, _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width + Dp(10));
         TextRenderer.DrawText(
             graphics,
             spanText,
             _theme.SmallFont,
-            new Rectangle(plot.Left, plot.Bottom + Dp(2), Dp(60), Dp(13)),
+            new Rectangle(plot.Left - Dp(2), xLabelTop, xLabelWidth, axisLabelSize.Height),
             _theme.TextMuted,
             TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+
+        int nowWidth = TextRenderer.MeasureText(graphics, "现在", _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width + Dp(4);
         TextRenderer.DrawText(
             graphics,
             "现在",
             _theme.SmallFont,
-            new Rectangle(plot.Right - Dp(40), plot.Bottom + Dp(2), Dp(40), Dp(13)),
+            new Rectangle(plot.Right - nowWidth, xLabelTop, nowWidth, axisLabelSize.Height),
             _theme.TextMuted,
             TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
 

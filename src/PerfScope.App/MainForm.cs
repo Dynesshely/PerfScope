@@ -112,7 +112,7 @@ internal sealed class MainForm : Form
         };
         _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.RowStyles.Add(new RowStyle(SizeType.Absolute, Scaled(148)));
+        _layout.RowStyles.Add(new RowStyle(SizeType.Absolute, Scaled(178)));
         _layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
         _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _layout.Controls.Add(_toolbar, 0, 0);
