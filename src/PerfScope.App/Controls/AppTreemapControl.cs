@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.Drawing.Drawing2D;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core.Models;
@@ -242,7 +243,7 @@ internal sealed class AppTreemapControl : Control
             long remainder = used - attributed;
             if (remainder > Math.Max(256L << 20, used / 50))
             {
-                entries.Add(new Entry("__unattributed__", "未归属（内核 / 缓存 / 共享）", remainder, FormatUtil.Bytes(remainder), 0, 0, null, EntryKind.Unattributed));
+                entries.Add(new Entry("__unattributed__", Loc.T("未归属（内核 / 缓存 / 共享）"), remainder, FormatUtil.Bytes(remainder), 0, 0, null, EntryKind.Unattributed));
             }
         }
 
@@ -252,7 +253,7 @@ internal sealed class AppTreemapControl : Control
             long free = Math.Max(0, _physicalBytes - used);
             if (free > Math.Max(64L << 20, _physicalBytes / 100))
             {
-                entries.Add(new Entry("__free__", "空闲内存", free, FormatUtil.Bytes(free), 0, 0, null, EntryKind.Free));
+                entries.Add(new Entry("__free__", Loc.T("空闲内存"), free, FormatUtil.Bytes(free), 0, 0, null, EntryKind.Free));
             }
         }
 
@@ -284,11 +285,11 @@ internal sealed class AppTreemapControl : Control
         }
 
         // 补一块「空闲」：让整张图的面积口径等于 100%，
-        // 空闲很大时应用块会变小，但"还有多少余量"一眼可见（可用工具栏切换回内存分布看细节）。
+        // 空闲很大时应用块会变小，但Loc.T("还有多少余量")一眼可见（可用工具栏切换回内存分布看细节）。
         double idle = 100.0 - total;
         if (idle > 0.5)
         {
-            entries.Add(new Entry("__idle_cpu__", "空闲 CPU", idle, FormatUtil.Percent(idle), 0, 0, null, EntryKind.Free));
+            entries.Add(new Entry("__idle_cpu__", Loc.T("空闲 CPU"), idle, FormatUtil.Percent(idle), 0, 0, null, EntryKind.Free));
         }
 
         return entries;
@@ -463,8 +464,8 @@ internal sealed class AppTreemapControl : Control
         if (_blocks.Count == 0)
         {
             string message = _apps.Length == 0
-                ? "正在等待第一帧采样数据…"
-                : _metric == TreemapMetric.Memory ? "当前筛选条件下没有可显示的内存占用" : "当前没有可显示的 CPU 占用";
+                ? Loc.T("正在等待第一帧采样数据…")
+                : _metric == TreemapMetric.Memory ? Loc.T("当前筛选条件下没有可显示的内存占用") : Loc.T("当前没有可显示的 CPU 占用");
             TextRenderer.DrawText(
                 graphics,
                 message,
@@ -514,16 +515,16 @@ internal sealed class AppTreemapControl : Control
             long used = Math.Max(0, _usedBytes);
             long free = _physicalBytes > used ? _physicalBytes - used : 0;
             caption = _physicalBytes > 0
-                ? "在用 " + TrimUnit(used) + " / 空闲 " + TrimUnit(free) + " / 共 " + FormatUtil.Bytes(_physicalBytes) + " · 面积 = 内存"
-                : "已归属 " + FormatUtil.Bytes(_attributedBytes) + " · 面积 = 内存";
+                ? Loc.T("在用 {0} / 空闲 {1} / 共 {2} · 面积 = 内存", TrimUnit(used), TrimUnit(free), FormatUtil.Bytes(_physicalBytes))
+                : Loc.T("已归属 {0} · 面积 = 内存", FormatUtil.Bytes(_attributedBytes));
         }
         else
         {
             double appTotal = _blocks.Where(b => b.Key != "__idle_cpu__").Sum(b => b.Weight);
             double idlePart = _blocks.Where(b => b.Key == "__idle_cpu__").Sum(b => b.Weight);
             caption = idlePart > 0
-                ? "应用合计 " + FormatUtil.Percent(appTotal) + " / 空闲 " + FormatUtil.Percent(idlePart)
-                : "应用合计 " + FormatUtil.Percent(appTotal);
+                ? Loc.T("应用合计 {0} / 空闲 {1}", FormatUtil.Percent(appTotal), FormatUtil.Percent(idlePart))
+                : Loc.T("应用合计 {0}", FormatUtil.Percent(appTotal));
         }
 
         if (string.IsNullOrEmpty(caption))
@@ -835,34 +836,34 @@ internal sealed class AppTreemapControl : Control
 
         if (block.Key == "__unattributed__")
         {
-            lines.Add(block.ValueText + " · 占在用内存 " + Share(block.Weight, _usedBytes > 0 ? _usedBytes : block.Weight));
-            lines.Add("内核与驱动、文件缓存、压缩内存、共享页等");
-            lines.Add("这部分无法归属到任何进程");
-            return ("未归属内存", lines);
+            lines.Add(block.ValueText + Loc.T(" · 占在用内存 ") + Share(block.Weight, _usedBytes > 0 ? _usedBytes : block.Weight));
+            lines.Add(Loc.T("内核与驱动、文件缓存、压缩内存、共享页等"));
+            lines.Add(Loc.T("这部分无法归属到任何进程"));
+            return (Loc.T("未归属内存"), lines);
         }
 
         if (block.Key == "__free__")
         {
-            lines.Add(block.ValueText + " · 占物理内存 " + Share(block.Weight, _physicalBytes));
-            lines.Add("系统可用内存，随时可以被应用申请");
-            return ("空闲内存", lines);
+            lines.Add(block.ValueText + Loc.T(" · 占物理内存 ") + Share(block.Weight, _physicalBytes));
+            lines.Add(Loc.T("系统可用内存，随时可以被应用申请"));
+            return (Loc.T("空闲内存"), lines);
         }
 
         if (block.Key == "__idle_cpu__")
         {
-            lines.Add(block.ValueText + " · 整机口径下未被任何进程占用");
-            return ("空闲 CPU", lines);
+            lines.Add(block.ValueText + Loc.T(" · 整机口径下未被任何进程占用"));
+            return (Loc.T("空闲 CPU"), lines);
         }
 
         if (_metric == TreemapMetric.Memory)
         {
             long used = Math.Max(_usedBytes, _attributedBytes);
-            lines.Add("内存 " + block.ValueText + (used > 0 ? " · 占在用 " + Share(block.Weight, used) : string.Empty));
-            lines.Add("CPU " + FormatUtil.Percent(block.CpuPercent) + " · " + block.ProcessCount + " 个进程");
+            lines.Add(Loc.T("内存 ") + block.ValueText + (used > 0 ? Loc.T(" · 占在用 ") + Share(block.Weight, used) : string.Empty));
+            lines.Add("CPU " + FormatUtil.Percent(block.CpuPercent) + " · " + block.ProcessCount + Loc.T(" 个进程"));
             return (block.Name, lines);
         }
 
-        lines.Add("CPU " + block.ValueText + " · " + block.ProcessCount + " 个进程");
+        lines.Add("CPU " + block.ValueText + " · " + block.ProcessCount + Loc.T(" 个进程"));
         return (block.Name, lines);
     }
 

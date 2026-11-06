@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="立即刷新" xml:space="preserve">
+    <value>Refresh now</value>
+  </data>
+  <data name="暂停监控" xml:space="preserve">
+    <value>Pause monitoring</value>
+  </data>
+  <data name="继续监控" xml:space="preserve">
+    <value>Resume monitoring</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="历史" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="分析" xml:space="preserve">
+    <value>Analysis</value>
+  </data>
+  <data name="接入 Agent" xml:space="preserve">
+    <value>Connect an agent</value>
+  </data>
+  <data name="分布视图" xml:space="preserve">
+    <value>Distribution view</value>
+  </data>
+  <data name="演示模式" xml:space="preserve">
+    <value>Demo mode</value>
+  </data>
+  <data name="关于 PerfScope" xml:space="preserve">
+    <value>About PerfScope</value>
+  </data>
+  <data name="关于 PerfScope…" xml:space="preserve">
+    <value>About PerfScope…</value>
+  </data>
+  <data name="双击托盘图标唤醒窗口" xml:space="preserve">
+    <value>Double-click the tray icon to wake this window</value>
+  </data>
+  <data name="显示主窗口" xml:space="preserve">
+    <value>Show main window</value>
+  </data>
+  <data name="退出" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="设置…" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="历史…" xml:space="preserve">
+    <value>History…</value>
+  </data>
+  <data name="应用" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="内存" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="进程数" xml:space="preserve">
+    <value>Processes</value>
+  </data>
+  <data name="磁盘读写" xml:space="preserve">
+    <value>Disk I/O</value>
+  </data>
+  <data name="趋势" xml:space="preserve">
+    <value>Trend</value>
+  </data>
+  <data name="整机 CPU" xml:space="preserve">
+    <value>System CPU</value>
+  </data>
+  <data name="物理内存" xml:space="preserve">
+    <value>Physical memory</value>
+  </data>
+  <data name="空闲内存" xml:space="preserve">
+    <value>Free memory</value>
+  </data>
+  <data name="空闲 CPU" xml:space="preserve">
+    <value>Idle CPU</value>
+  </data>
+  <data name="未归属（内核 / 缓存 / 共享）" xml:space="preserve">
+    <value>Unattributed (kernel / cache / shared)</value>
+  </data>
+  <data name="未归属内存" xml:space="preserve">
+    <value>Unattributed memory</value>
+  </data>
+  <data name="内核与驱动、文件缓存、压缩内存、共享页等" xml:space="preserve">
+    <value>Kernel, drivers, file cache, compressed memory, shared pages and more</value>
+  </data>
+  <data name="系统可用内存，随时可以被应用申请" xml:space="preserve">
+    <value>Memory the system can hand to applications at any time</value>
+  </data>
+  <data name="这部分无法归属到任何进程" xml:space="preserve">
+    <value>This memory cannot be attributed to any process</value>
+  </data>
+  <data name="整机口径下未被任何进程占用" xml:space="preserve">
+    <value>Not claimed by any process at whole-machine level</value>
+  </data>
+  <data name="内存分布" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="CPU 分布" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="应用合计 " xml:space="preserve">
+    <value>Application total </value>
+  </data>
+  <data name="还有多少余量" xml:space="preserve">
+    <value>Headroom</value>
+  </data>
+  <data name="采样" xml:space="preserve">
+    <value>Sampling</value>
+  </data>
+  <data name="采样节奏" xml:space="preserve">
+    <value>Sampling cadence</value>
+  </data>
+  <data name="采样间隔（毫秒）" xml:space="preserve">
+    <value>Sample interval (ms)</value>
+  </data>
+  <data name="界面刷新间隔（毫秒）" xml:space="preserve">
+    <value>UI refresh interval (ms)</value>
+  </data>
+  <data name="自适应降频" xml:space="preserve">
+    <value>Adaptive throttling</value>
+  </data>
+  <data name="主窗口隐藏时自动降频" xml:space="preserve">
+    <value>Throttle while the window is hidden</value>
+  </data>
+  <data name="隐藏时采样间隔（毫秒）" xml:space="preserve">
+    <value>Sample interval while hidden (ms)</value>
+  </data>
+  <data name="隐藏窗口时降频（托盘常驻省电省 CPU）" xml:space="preserve">
+    <value>Throttle while hidden (stay in tray, save CPU)</value>
+  </data>
+  <data name="平滑" xml:space="preserve">
+    <value>Smoothing</value>
+  </data>
+  <data name="平滑窗口（采样点数）" xml:space="preserve">
+    <value>Smoothing window (samples)</value>
+  </data>
+  <data name="口径" xml:space="preserve">
+    <value>Metrics</value>
+  </data>
+  <data name="CPU 口径" xml:space="preserve">
+    <value>CPU basis</value>
+  </data>
+  <data name="内存口径" xml:space="preserve">
+    <value>Memory basis</value>
+  </data>
+  <data name="整机百分比（0~100，同任务管理器）" xml:space="preserve">
+    <value>Whole machine (0–100, same as Task Manager)</value>
+  </data>
+  <data name="单核百分比（单线程跑满 = 100）" xml:space="preserve">
+    <value>Per core (one saturated thread = 100)</value>
+  </data>
+  <data name="工作集（物理驻留）" xml:space="preserve">
+    <value>Working set (resident)</value>
+  </data>
+  <data name="私有字节（更接近真实占用）" xml:space="preserve">
+    <value>Private bytes (closer to actual usage)</value>
+  </data>
+  <data name="归并" xml:space="preserve">
+    <value>Grouping</value>
+  </data>
+  <data name="应用归并策略" xml:space="preserve">
+    <value>Application grouping</value>
+  </data>
+  <data name="产品名归并" xml:space="preserve">
+    <value>Group by product name</value>
+  </data>
+  <data name="安装目录归并" xml:space="preserve">
+    <value>Group by install root</value>
+  </data>
+  <data name="父进程继承" xml:space="preserve">
+    <value>Inherit parent application</value>
+  </data>
+  <data name="合并系统进程" xml:space="preserve">
+    <value>Merge system modules</value>
+  </data>
+  <data name="版本信息缓存" xml:space="preserve">
+    <value>Cache executable metadata</value>
+  </data>
+  <data name="兜底组名" xml:space="preserve">
+    <value>Fallback group name</value>
+  </data>
+  <data name="系统组名" xml:space="preserve">
+    <value>System group name</value>
+  </data>
+  <data name="自定义规则（按顺序优先匹配，双击可编辑）" xml:space="preserve">
+    <value>Custom rules (first match wins, double-click to edit)</value>
+  </data>
+  <data name="留存" xml:space="preserve">
+    <value>Retention</value>
+  </data>
+  <data name="历史与趋势留存" xml:space="preserve">
+    <value>History and trends</value>
+  </data>
+  <data name="内存保留（分钟）" xml:space="preserve">
+    <value>In-memory retention (minutes)</value>
+  </data>
+  <data name="磁盘保留（天）" xml:space="preserve">
+    <value>On-disk retention (days)</value>
+  </data>
+  <data name="趋势应用数" xml:space="preserve">
+    <value>Applications tracked for trends</value>
+  </data>
+  <data name="写入磁盘" xml:space="preserve">
+    <value>Write history to disk</value>
+  </data>
+  <data name="把历史写入磁盘（关闭后仅内存保留）" xml:space="preserve">
+    <value>Write history to disk (otherwise memory only)</value>
+  </data>
+  <data name="智能分析（产出可被 AI 直接消费的历史）" xml:space="preserve">
+    <value>Insights (history an AI can consume)</value>
+  </data>
+  <data name="启用分析" xml:space="preserve">
+    <value>Enable insights</value>
+  </data>
+  <data name="CPU 片段阈值（%）" xml:space="preserve">
+    <value>CPU episode threshold (%)</value>
+  </data>
+  <data name="片段最短时长（秒）" xml:space="preserve">
+    <value>Minimum episode length (s)</value>
+  </data>
+  <data name="内存增长阈值（MB/分）" xml:space="preserve">
+    <value>Memory growth threshold (MB/min)</value>
+  </data>
+  <data name="摘要窗口（分钟）" xml:space="preserve">
+    <value>Digest window (minutes)</value>
+  </data>
+  <data name="界面" xml:space="preserve">
+    <value>Interface</value>
+  </data>
+  <data name="主窗口" xml:space="preserve">
+    <value>Main window</value>
+  </data>
+  <data name="列表显示行数" xml:space="preserve">
+    <value>Rows in the list</value>
+  </data>
+  <data name="显示自身开销" xml:space="preserve">
+    <value>Show own overhead</value>
+  </data>
+  <data name="显示系统模块组" xml:space="preserve">
+    <value>Show system modules</value>
+  </data>
+  <data name="在列表中显示系统模块与系统进程组" xml:space="preserve">
+    <value>Show system modules and system process groups in the list</value>
+  </data>
+  <data name="在状态栏显示监控器自身开销" xml:space="preserve">
+    <value>Show this app's own overhead in the status bar</value>
+  </data>
+  <data name="主题" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="深色" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="浅色" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="启动与关闭" xml:space="preserve">
+    <value>Startup and exit</value>
+  </data>
+  <data name="启动最小化" xml:space="preserve">
+    <value>Start minimized</value>
+  </data>
+  <data name="启动时最小化到托盘" xml:space="preserve">
+    <value>Start minimized to the tray</value>
+  </data>
+  <data name="开机自动启动" xml:space="preserve">
+    <value>Run at startup</value>
+  </data>
+  <data name="开机自动启动（写入当前用户注册表）" xml:space="preserve">
+    <value>Run at startup (adds a current-user registry entry)</value>
+  </data>
+  <data name="关闭按钮行为" xml:space="preserve">
+    <value>Close button behaviour</value>
+  </data>
+  <data name="最小化到托盘" xml:space="preserve">
+    <value>Minimize to the tray</value>
+  </data>
+  <data name="直接退出程序" xml:space="preserve">
+    <value>Exit the application</value>
+  </data>
+  <data name="告警" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="启用告警" xml:space="preserve">
+    <value>Enable alerts</value>
+  </data>
+  <data name="启用阈值气泡告警" xml:space="preserve">
+    <value>Show tray balloon alerts</value>
+  </data>
+  <data name="内存占用告警" xml:space="preserve">
+    <value>Memory usage alert</value>
+  </data>
+  <data name="CPU 占用告警" xml:space="preserve">
+    <value>CPU usage alert</value>
+  </data>
+  <data name="阈值气泡告警（托盘气泡）" xml:space="preserve">
+    <value>Threshold alerts (tray balloon)</value>
+  </data>
+  <data name="CPU 阈值（%）" xml:space="preserve">
+    <value>CPU threshold (%)</value>
+  </data>
+  <data name="内存阈值（%）" xml:space="preserve">
+    <value>Memory threshold (%)</value>
+  </data>
+  <data name="冷却时间（秒）" xml:space="preserve">
+    <value>Cooldown (s)</value>
+  </data>
+  <data name="诊断" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="日志" xml:space="preserve">
+    <value>Logging</value>
+  </data>
+  <data name="日志级别（重启后生效）" xml:space="preserve">
+    <value>Log level (applies after restart)</value>
+  </data>
+  <data name="日志大小上限（KB，重启后生效）" xml:space="preserve">
+    <value>Log size limit (KB, applies after restart)</value>
+  </data>
+  <data name="数据位置" xml:space="preserve">
+    <value>Data location</value>
+  </data>
+  <data name="数据根：" xml:space="preserve">
+    <value>Data root:</value>
+  </data>
+  <data name="数据目录" xml:space="preserve">
+    <value>Data folder</value>
+  </data>
+  <data name="数据目录：" xml:space="preserve">
+    <value>Data folder:</value>
+  </data>
+  <data name="刷新" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="删除" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="新增" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="编辑" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="上移" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="下移" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="确定" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="恢复默认" xml:space="preserve">
+    <value>Restore defaults</value>
+  </data>
+  <data name="复制 Prompt" xml:space="preserve">
+    <value>Copy prompt</value>
+  </data>
+  <data name="另存为…" xml:space="preserve">
+    <value>Save as…</value>
+  </data>
+  <data name="打开数据目录" xml:space="preserve">
+    <value>Open data folder</value>
+  </data>
+  <data name="接入 Agent — 把分析任务交给你的 AI" xml:space="preserve">
+    <value>Connect an agent — hand the analysis to your AI</value>
+  </data>
+  <data name="把下面的 Prompt 复制给你的 Agent" xml:space="preserve">
+    <value>Copy the prompt below into your agent</value>
+  </data>
+  <data name="Agent 只要能读本地文件（Claude Code / Cursor / Codex 等）就能直接分析，无需你再补充上下文。" xml:space="preserve">
+    <value>Any agent that can read local files (Claude Code, Cursor, Codex, …) can start right away — no extra context needed.</value>
+  </data>
+  <data name="PerfScope 设置" xml:space="preserve">
+    <value>PerfScope Settings</value>
+  </data>
+  <data name="PerfScope 历史 — 当天应用汇总" xml:space="preserve">
+    <value>PerfScope History — daily application summary</value>
+  </data>
+  <data name="PerfScope — 应用级 CPU / 内存监控" xml:space="preserve">
+    <value>PerfScope — application-level CPU &amp; memory monitor</value>
+  </data>
+  <data name="日期" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="CPU 时间（秒）" xml:space="preserve">
+    <value>CPU time (s)</value>
+  </data>
+  <data name="峰值 CPU" xml:space="preserve">
+    <value>Peak CPU</value>
+  </data>
+  <data name="峰值内存" xml:space="preserve">
+    <value>Peak memory</value>
+  </data>
+  <data name="采样点" xml:space="preserve">
+    <value>Samples</value>
+  </data>
+  <data name="暂无已落盘的历史数据。历史会在启用「写入磁盘」后按天累积。" xml:space="preserve">
+    <value>No history on disk yet. It accumulates per day once "Write history to disk" is enabled.</value>
+  </data>
+  <data name="该动作需要填写目标名称。" xml:space="preserve">
+    <value>This action requires a target name.</value>
+  </data>
+  <data name="请填写匹配模式。" xml:space="preserve">
+    <value>Please enter a pattern.</value>
+  </data>
+  <data name="请先选中一条规则。" xml:space="preserve">
+    <value>Please select a rule first.</value>
+  </data>
+  <data name="兜底组名不能为空。" xml:space="preserve">
+    <value>The fallback group name cannot be empty.</value>
+  </data>
+  <data name="系统组名不能为空。" xml:space="preserve">
+    <value>The system group name cannot be empty.</value>
+  </data>
+  <data name="兜底组名与系统组名不能相同，否则无法区分系统组。" xml:space="preserve">
+    <value>Fallback and system group names must differ.</value>
+  </data>
+  <data name="确定把所有设置恢复为出厂默认值吗？（不会立即保存，可点取消放弃）" xml:space="preserve">
+    <value>Restore all settings to factory defaults? Nothing is saved until you press Save.</value>
+  </data>
+  <data name="设置校验未通过。" xml:space="preserve">
+    <value>Some settings are invalid.</value>
+  </data>
+  <data name="保存设置失败，详情见日志。" xml:space="preserve">
+    <value>Failed to save settings, see the log.</value>
+  </data>
+  <data name="保存失败：" xml:space="preserve">
+    <value>Save failed: </value>
+  </data>
+  <data name="已保存：" xml:space="preserve">
+    <value>Saved: </value>
+  </data>
+  <data name="已复制 " xml:space="preserve">
+    <value>Copied </value>
+  </data>
+  <data name="复制失败：" xml:space="preserve">
+    <value>Copy failed: </value>
+  </data>
+  <data name="剪贴板被占用，请稍后重试或手动全选（Ctrl+A）复制" xml:space="preserve">
+    <value>Clipboard is busy — retry, or select all (Ctrl+A) and copy manually</value>
+  </data>
+  <data name="生成失败，可查看日志" xml:space="preserve">
+    <value>Generation failed, see the log</value>
+  </data>
+  <data name="打开目录失败：" xml:space="preserve">
+    <value>Failed to open the folder: </value>
+  </data>
+  <data name="语言" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="跟随系统" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="切换语言需要重启 PerfScope 才能完全生效，现在重启吗？" xml:space="preserve">
+    <value>A restart is required for the language change to take effect. Restart now?</value>
+  </data>
+  <data name="网络" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="路径" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="进程" xml:space="preserve">
+    <value>Process</value>
+  </data>
+  <data name="否" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="是" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="正在等待第一帧采样数据…" xml:space="preserve">
+    <value>Waiting for the first sample…</value>
+  </data>
+  <data name="当前筛选条件下没有应用" xml:space="preserve">
+    <value>No applications match the current filter</value>
+  </data>
+  <data name="正在读取历史…" xml:space="preserve">
+    <value>Loading history…</value>
+  </data>
+  <data name="没有应用汇总数据。" xml:space="preserve">
+    <value>No application summary available.</value>
+  </data>
+  <data name="说明：日志文件由 Core 的 FileLog 持有，没有热更新通道，改动会在下次启动时生效；其余设置保存后立即生效。" xml:space="preserve">
+    <value>Note: the log file is held by Core's FileLog with no hot-reload channel, so log changes apply on the next start; all other settings apply immediately.</value>
+  </data>
+  <data name="隐藏时的采样间隔不能小于正常采样间隔，否则窗口隐藏后反而更耗资源。" xml:space="preserve">
+    <value>The hidden-window interval cannot be shorter than the normal one, otherwise hiding the window would cost more.</value>
+  </data>
+  <data name="Windows 上真正能 7×24 常驻的 CPU / 内存监控小工具。" xml:space="preserve">
+    <value>A CPU and memory monitor that genuinely lives in your tray 24/7 on Windows.</value>
+  </data>
+  <data name="• 只展示「应用级」占用：按安装目录、版本信息、产品名把进程挂钩到同一个应用" xml:space="preserve">
+    <value>• Application-level usage only: processes are attached to one application via install root, version info and product name</value>
+  </data>
+  <data name="• 托盘常驻，窗口隐藏时自动降频采样" xml:space="preserve">
+    <value>• Lives in the tray and automatically slows sampling while hidden</value>
+  </data>
+  <data name="• 后台线程 + 原生批量采样（NtQuerySystemInformation），自身开销极低" xml:space="preserve">
+    <value>• A background thread with one batched native call (NtQuerySystemInformation) keeps its own cost negligible</value>
+  </data>
+  <data name="• 零第三方依赖，纯 .NET + WinForms + P/Invoke" xml:space="preserve">
+    <value>• Zero third-party dependencies — pure .NET, WinForms and P/Invoke</value>
+  </data>
+  <data name="在用 {0} / 空闲 {1} / 共 {2} · 面积 = 内存" xml:space="preserve">
+    <value>In use {0} / free {1} / total {2} · area = memory</value>
+  </data>
+  <data name="已归属 {0} · 面积 = 内存" xml:space="preserve">
+    <value>Attributed {0} · area = memory</value>
+  </data>
+  <data name="应用合计 {0} / 空闲 {1}" xml:space="preserve">
+    <value>Applications {0} / idle {1}</value>
+  </data>
+  <data name="应用合计 {0}" xml:space="preserve">
+    <value>Applications {0}</value>
+  </data>
+  <data name="自身 {0} / {1}" xml:space="preserve">
+    <value>itself {0} / {1}</value>
+  </data>
+  <data name="{0} 个进程 · {1}" xml:space="preserve">
+    <value>{0} processes · {1}</value>
+  </data>
+  <data name="采样间隔 {0} ms" xml:space="preserve">
+    <value>Sample interval {0} ms</value>
+  </data>
+  <data name="帧 {0}" xml:space="preserve">
+    <value>Frame {0}</value>
+  </data>
+  <data name="现在" xml:space="preserve">
+    <value>now</value>
+  </data>
+  <data name="秒前" xml:space="preserve">
+    <value>s ago</value>
+  </data>
+  <data name="分钟前" xml:space="preserve">
+    <value>min ago</value>
+  </data>
+  <data name="· 已暂停" xml:space="preserve">
+    <value> · paused</value>
+  </data>
+  <data name="内存总量未知" xml:space="preserve">
+    <value>Total memory unknown</value>
+  </data>
+  <data name="{0} 个进程 · {1} 个应用" xml:space="preserve">
+    <value>{0} processes · {1} applications</value>
+  </data>
+</root>

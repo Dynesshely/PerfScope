@@ -412,19 +412,19 @@ public sealed class AppClassifier : IAppClassifier
                 return path.Length > 0 && path.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase);
 
             case AppRuleMatch.ProductName:
-            {
-                var version = GetVersion(path, snapshot, nowMs);
-                var rawProduct = version.ProductName;
-                if (!string.IsNullOrWhiteSpace(rawProduct)
-                    && rawProduct!.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase))
                 {
-                    return true;
-                }
+                    var version = GetVersion(path, snapshot, nowMs);
+                    var rawProduct = version.ProductName;
+                    if (!string.IsNullOrWhiteSpace(rawProduct)
+                        && rawProduct!.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
 
-                var cleanedProduct = AppNameSanitizer.CleanName(rawProduct);
-                return cleanedProduct is not null
-                    && cleanedProduct.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase);
-            }
+                    var cleanedProduct = AppNameSanitizer.CleanName(rawProduct);
+                    return cleanedProduct is not null
+                        && cleanedProduct.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase);
+                }
 
             default:
                 return false;

@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using PerfScope.App.Controls;
 using PerfScope.App.Forms;
 using PerfScope.App.Infrastructure;
@@ -53,37 +54,37 @@ internal sealed class TrayAppContext : ApplicationContext
 
         var theme = _mainForm.CurrentTheme;
         _trayIcon = AppIcon.Get(32) ?? TrayIconFactory.Create(32);
-        _showItem = new ToolStripMenuItem("显示主窗口") { Font = theme.UiBoldFont };
+        _showItem = new ToolStripMenuItem(Loc.T("显示主窗口")) { Font = theme.UiBoldFont };
         _showItem.Click += (_, _) => ShowMainWindow();
 
-        _pauseItem = new ToolStripMenuItem("暂停监控");
+        _pauseItem = new ToolStripMenuItem(Loc.T("暂停监控"));
         _pauseItem.Click += (_, _) => _mainForm.TogglePause();
 
-        var settingsItem = new ToolStripMenuItem("设置…");
+        var settingsItem = new ToolStripMenuItem(Loc.T("设置…"));
         settingsItem.Click += (_, _) =>
         {
             ShowMainWindow();
             _mainForm.OpenSettings();
         };
 
-        var historyItem = new ToolStripMenuItem("历史…");
+        var historyItem = new ToolStripMenuItem(Loc.T("历史…"));
         historyItem.Click += (_, _) =>
         {
             ShowMainWindow();
             _mainForm.OpenHistory();
         };
 
-        _startupItem = new ToolStripMenuItem("开机启动") { CheckOnClick = false };
+        _startupItem = new ToolStripMenuItem(Loc.T("开机启动")) { CheckOnClick = false };
         _startupItem.Click += (_, _) => ToggleStartup();
 
-        var aboutItem = new ToolStripMenuItem("关于 PerfScope…");
+        var aboutItem = new ToolStripMenuItem(Loc.T("关于 PerfScope…"));
         aboutItem.Click += (_, _) =>
         {
             using var form = new AboutForm(_host);
             form.ShowDialog(_mainForm);
         };
 
-        var exitItem = new ToolStripMenuItem("退出");
+        var exitItem = new ToolStripMenuItem(Loc.T("退出"));
         exitItem.Click += (_, _) => ExitApplication();
 
         _menu = new ContextMenuStrip
@@ -112,7 +113,7 @@ internal sealed class TrayAppContext : ApplicationContext
         _tray = new NotifyIcon
         {
             Icon = _trayIcon,
-            Text = demo ? "PerfScope（演示模式）" : "PerfScope — 应用级 CPU / 内存监控",
+            Text = demo ? Loc.T("PerfScope（演示模式）") : Loc.T("PerfScope — 应用级 CPU / 内存监控"),
             ContextMenuStrip = _menu,
             Visible = true,
         };
@@ -134,7 +135,7 @@ internal sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "创建单实例激活事件失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("创建单实例激活事件失败"), ex);
         }
 
         SyncMenuState();
@@ -221,8 +222,8 @@ internal sealed class TrayAppContext : ApplicationContext
         {
             _lastCpuAlertUtc = now;
             ShowBalloon(
-                "CPU 占用告警",
-                "整机 CPU " + FormatUtil.Percent(frame.SystemCpuPercent) + "，已超过阈值 " +
+                Loc.T("CPU 占用告警"),
+                Loc.T("整机 CPU ") + FormatUtil.Percent(frame.SystemCpuPercent) + Loc.T("，已超过阈值 ") +
                 settings.AlertCpuPercent.ToString(System.Globalization.CultureInfo.CurrentCulture) + "%。");
         }
 
@@ -230,8 +231,8 @@ internal sealed class TrayAppContext : ApplicationContext
         {
             _lastMemoryAlertUtc = now;
             ShowBalloon(
-                "内存占用告警",
-                "物理内存 " + FormatUtil.Percent(frame.SystemMemoryPercent) + "，已超过阈值 " +
+                Loc.T("内存占用告警"),
+                Loc.T("物理内存 ") + FormatUtil.Percent(frame.SystemMemoryPercent) + Loc.T("，已超过阈值 ") +
                 settings.AlertMemoryPercent.ToString(System.Globalization.CultureInfo.CurrentCulture) + "%。");
         }
     }
@@ -244,7 +245,7 @@ internal sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "显示托盘气泡失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("显示托盘气泡失败"), ex);
         }
     }
 
@@ -261,7 +262,7 @@ internal sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "显示主窗口失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("显示主窗口失败"), ex);
         }
     }
 
@@ -270,7 +271,7 @@ internal sealed class TrayAppContext : ApplicationContext
         bool enable = !_host.Settings.RunAtStartup;
         if (!_demo && !StartupRegistration.TryApply(enable, out string? error))
         {
-            ShowBalloon("开机启动设置失败", error ?? "无法写入注册表 Run 项。");
+            ShowBalloon(Loc.T("开机启动设置失败"), error ?? Loc.T("无法写入注册表 Run 项。"));
             SyncMenuState();
             return;
         }
@@ -279,7 +280,7 @@ internal sealed class TrayAppContext : ApplicationContext
         next.RunAtStartup = enable;
         if (!_host.ApplySettings(next))
         {
-            ShowBalloon("保存设置失败", _host.LastError ?? "详情见日志。");
+            ShowBalloon(Loc.T("保存设置失败"), _host.LastError ?? Loc.T("详情见日志。"));
         }
 
         SyncMenuState();
@@ -292,7 +293,7 @@ internal sealed class TrayAppContext : ApplicationContext
             return;
         }
 
-        _pauseItem.Text = paused ? "继续监控" : "暂停监控";
+        _pauseItem.Text = paused ? Loc.T("继续监控") : Loc.T("暂停监控");
     }
 
     private void OnSettingsChanged(object? sender, AppSettings settings)
@@ -307,11 +308,11 @@ internal sealed class TrayAppContext : ApplicationContext
 
     private void SyncMenuState()
     {
-        _pauseItem.Text = _host.IsPaused ? "继续监控" : "暂停监控";
+        _pauseItem.Text = _host.IsPaused ? Loc.T("继续监控") : Loc.T("暂停监控");
         _pauseItem.Checked = _host.IsPaused;
         _startupItem.Checked = _host.Settings.RunAtStartup;
-        _showItem.Text = "显示主窗口";
-        _tray.Text = _demo ? "PerfScope（演示模式）" : "PerfScope — 应用级 CPU / 内存监控";
+        _showItem.Text = Loc.T("显示主窗口");
+        _tray.Text = _demo ? Loc.T("PerfScope（演示模式）") : Loc.T("PerfScope — 应用级 CPU / 内存监控");
     }
 
     private void ExitApplication()
@@ -342,7 +343,7 @@ internal sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "退出时停止采样失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("退出时停止采样失败"), ex);
         }
 
         try
@@ -351,7 +352,7 @@ internal sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "退出时关闭主窗口失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("退出时关闭主窗口失败"), ex);
         }
 
         ExitThread();

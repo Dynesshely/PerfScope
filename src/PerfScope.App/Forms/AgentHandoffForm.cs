@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core.Settings;
 
@@ -23,9 +24,9 @@ internal sealed class AgentHandoffForm : Form
         _theme = Theme.Create(host.Settings.Theme, _scale);
         _prompt = string.Empty;
 
-        Text = "接入 Agent — 把分析任务交给你的 AI";
+        Text = Loc.T("接入 Agent — 把分析任务交给你的 AI");
         AutoScaleMode = AutoScaleMode.None;
-        // 用 CenterScreen：主窗口可能是"贴满屏幕"的宽窗口，按父窗口居中会把对话框挤出屏幕
+        // 用 CenterScreen：主窗口可能是Loc.T("贴满屏幕")的宽窗口，按父窗口居中会把对话框挤出屏幕
         StartPosition = FormStartPosition.CenterScreen;
         MinimizeBox = false;
         ShowInTaskbar = false;
@@ -50,7 +51,7 @@ internal sealed class AgentHandoffForm : Form
         {
             Dock = DockStyle.Top,
             Height = Scaled(26),
-            Text = "把下面的 Prompt 复制给你的 Agent",
+            Text = Loc.T("把下面的 Prompt 复制给你的 Agent"),
             Font = _theme.UiBoldFont,
             ForeColor = _theme.TextPrimary,
             TextAlign = ContentAlignment.MiddleLeft,
@@ -59,8 +60,8 @@ internal sealed class AgentHandoffForm : Form
         var hintLabel = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "Prompt 里已经写入本机真实的报告路径、数据口径与自动结论；"
-                   + "Agent 只要能读本地文件（Claude Code / Cursor / Codex 等）就能直接分析，无需你再补充上下文。",
+            Text = Loc.T("Prompt 里已经写入本机真实的报告路径、数据口径与自动结论；")
+                   + Loc.T("Agent 只要能读本地文件（Claude Code / Cursor / Codex 等）就能直接分析，无需你再补充上下文。"),
             Font = _theme.SmallFont,
             ForeColor = _theme.TextMuted,
             TextAlign = ContentAlignment.TopLeft,
@@ -101,7 +102,7 @@ internal sealed class AgentHandoffForm : Form
 
         var copyButton = new Button
         {
-            Text = "复制 Prompt",
+            Text = Loc.T("复制 Prompt"),
             Width = Scaled(150),
             Height = Scaled(30),
             Margin = new Padding(Scaled(8), 0, 0, 0),
@@ -110,7 +111,7 @@ internal sealed class AgentHandoffForm : Form
 
         var saveButton = new Button
         {
-            Text = "另存为…",
+            Text = Loc.T("另存为…"),
             Width = Scaled(96),
             Height = Scaled(30),
             Margin = new Padding(Scaled(8), 0, 0, 0),
@@ -119,7 +120,7 @@ internal sealed class AgentHandoffForm : Form
 
         var folderButton = new Button
         {
-            Text = "打开数据目录",
+            Text = Loc.T("打开数据目录"),
             Width = Scaled(150),
             Height = Scaled(30),
             Margin = new Padding(Scaled(8), 0, 0, 0),
@@ -128,7 +129,7 @@ internal sealed class AgentHandoffForm : Form
 
         var closeButton = new Button
         {
-            Text = "关闭",
+            Text = Loc.T("关闭"),
             Width = Scaled(88),
             Height = Scaled(30),
             Margin = new Padding(Scaled(8), 0, 0, 0),
@@ -203,13 +204,13 @@ internal sealed class AgentHandoffForm : Form
             _promptBox.Text = _prompt;
             _promptBox.SelectionStart = 0;
             _promptBox.SelectionLength = 0;
-            _statusLabel.Text = "数据目录：" + _host.AnalysisDirectory;
+            _statusLabel.Text = Loc.T("数据目录：") + _host.AnalysisDirectory;
         }
         catch (Exception ex)
         {
             _prompt = string.Empty;
-            _promptBox.Text = "生成 Prompt 失败：" + ex.Message;
-            _statusLabel.Text = "生成失败，可查看日志";
+            _promptBox.Text = Loc.T("生成 Prompt 失败：") + ex.Message;
+            _statusLabel.Text = Loc.T("生成失败，可查看日志");
         }
     }
 
@@ -233,7 +234,7 @@ internal sealed class AgentHandoffForm : Form
                 try
                 {
                     Clipboard.SetText(_prompt);
-                    _statusLabel.Text = "已复制 " + _prompt.Length + " 个字符到剪贴板，粘贴给你的 Agent 即可";
+                    _statusLabel.Text = Loc.T("已复制 ") + _prompt.Length + Loc.T(" 个字符到剪贴板，粘贴给你的 Agent 即可");
                     return;
                 }
                 catch (System.Runtime.InteropServices.ExternalException)
@@ -242,11 +243,11 @@ internal sealed class AgentHandoffForm : Form
                 }
             }
 
-            _statusLabel.Text = "剪贴板被占用，请稍后重试或手动全选（Ctrl+A）复制";
+            _statusLabel.Text = Loc.T("剪贴板被占用，请稍后重试或手动全选（Ctrl+A）复制");
         }
         catch (Exception ex)
         {
-            _statusLabel.Text = "复制失败：" + ex.Message;
+            _statusLabel.Text = Loc.T("复制失败：") + ex.Message;
         }
     }
 
@@ -259,9 +260,9 @@ internal sealed class AgentHandoffForm : Form
 
         using var dialog = new SaveFileDialog
         {
-            Title = "保存 Agent Prompt",
+            Title = Loc.T("保存 Agent Prompt"),
             FileName = "perfscope-agent-prompt.md",
-            Filter = "Markdown (*.md)|*.md|文本文件 (*.txt)|*.txt",
+            Filter = Loc.T("Markdown (*.md)|*.md|文本文件 (*.txt)|*.txt"),
             InitialDirectory = _host.AnalysisDirectory,
         };
         if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -272,11 +273,11 @@ internal sealed class AgentHandoffForm : Form
         try
         {
             File.WriteAllText(dialog.FileName, _prompt, new System.Text.UTF8Encoding(false));
-            _statusLabel.Text = "已保存：" + dialog.FileName;
+            _statusLabel.Text = Loc.T("已保存：") + dialog.FileName;
         }
         catch (Exception ex)
         {
-            _statusLabel.Text = "保存失败：" + ex.Message;
+            _statusLabel.Text = Loc.T("保存失败：") + ex.Message;
         }
     }
 
@@ -297,7 +298,7 @@ internal sealed class AgentHandoffForm : Form
         }
         catch (Exception ex)
         {
-            _statusLabel.Text = "打开目录失败：" + ex.Message;
+            _statusLabel.Text = Loc.T("打开目录失败：") + ex.Message;
         }
     }
 }

@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.Globalization;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core.Models;
@@ -24,7 +25,7 @@ internal sealed class HistoryForm : Form
         _scale = Theme.DetectDpiScale();
         _theme = Theme.Create(host.Settings.Theme, _scale);
 
-        Text = "PerfScope 历史 — 当天应用汇总";
+        Text = Loc.T("PerfScope 历史 — 当天应用汇总");
         AutoScaleMode = AutoScaleMode.None;
         StartPosition = FormStartPosition.CenterParent;
         MinimizeBox = false;
@@ -42,7 +43,7 @@ internal sealed class HistoryForm : Form
         };
         _dayBox.SelectedIndexChanged += (_, _) => ReloadDay();
 
-        var refreshButton = new Button { Text = "刷新", Width = Scaled(80), Height = Scaled(28) };
+        var refreshButton = new Button { Text = Loc.T("刷新"), Width = Scaled(80), Height = Scaled(28) };
         refreshButton.Click += (_, _) => ReloadDays();
 
         var topBar = new FlowLayoutPanel
@@ -56,7 +57,7 @@ internal sealed class HistoryForm : Form
         };
         topBar.Controls.Add(new Label
         {
-            Text = "日期",
+            Text = Loc.T("日期"),
             AutoSize = true,
             TextAlign = ContentAlignment.MiddleLeft,
             Margin = new Padding(0, Scaled(6), Scaled(8), 0),
@@ -70,11 +71,11 @@ internal sealed class HistoryForm : Form
             Dock = DockStyle.Fill,
             Font = _theme.SmallFont,
         };
-        _list.Columns.Add("应用", Scaled(240));
-        _list.Columns.Add("CPU 时间（秒）", Scaled(120), HorizontalAlignment.Right);
-        _list.Columns.Add("峰值 CPU", Scaled(100), HorizontalAlignment.Right);
-        _list.Columns.Add("峰值内存", Scaled(120), HorizontalAlignment.Right);
-        _list.Columns.Add("采样点", Scaled(80), HorizontalAlignment.Right);
+        _list.Columns.Add(Loc.T("应用"), Scaled(240));
+        _list.Columns.Add(Loc.T("CPU 时间（秒）"), Scaled(120), HorizontalAlignment.Right);
+        _list.Columns.Add(Loc.T("峰值 CPU"), Scaled(100), HorizontalAlignment.Right);
+        _list.Columns.Add(Loc.T("峰值内存"), Scaled(120), HorizontalAlignment.Right);
+        _list.Columns.Add(Loc.T("采样点"), Scaled(80), HorizontalAlignment.Right);
 
         _summaryLabel = new Label
         {
@@ -85,7 +86,7 @@ internal sealed class HistoryForm : Form
             ForeColor = _theme.TextMuted,
             Font = _theme.SmallFont,
             Padding = new Padding(Scaled(12), 0, Scaled(12), 0),
-            Text = "正在读取历史…",
+            Text = Loc.T("正在读取历史…"),
         };
 
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, BackColor = _theme.Background };
@@ -113,7 +114,7 @@ internal sealed class HistoryForm : Form
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "读取历史日期失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("读取历史日期失败"), ex);
             days = Array.Empty<DateOnly>();
         }
 
@@ -134,7 +135,7 @@ internal sealed class HistoryForm : Form
         else
         {
             _list.Items.Clear();
-            _summaryLabel.Text = "暂无已落盘的历史数据。历史会在启用「写入磁盘」后按天累积。";
+            _summaryLabel.Text = Loc.T("暂无已落盘的历史数据。历史会在启用「写入磁盘」后按天累积。");
         }
     }
 
@@ -158,8 +159,8 @@ internal sealed class HistoryForm : Form
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "查询历史汇总失败", ex);
-            _summaryLabel.Text = "查询历史失败，详情见日志。";
+            _host.SafeLog(LogLevel.Warn, Loc.T("查询历史汇总失败"), ex);
+            _summaryLabel.Text = Loc.T("查询历史失败，详情见日志。");
             return;
         }
 
@@ -183,9 +184,9 @@ internal sealed class HistoryForm : Form
         }
 
         _summaryLabel.Text = summaries.Count == 0
-            ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + " 没有应用汇总数据。"
-            : date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + " 共 " + summaries.Count.ToString(CultureInfo.CurrentCulture) +
-              " 个应用；CPU 时间 = 百分比·秒 / 100，越大表示当天占用越久。";
+            ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + Loc.T(" 没有应用汇总数据。")
+            : date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + Loc.T(" 共 ") + summaries.Count.ToString(CultureInfo.CurrentCulture) +
+              Loc.T(" 个应用；CPU 时间 = 百分比·秒 / 100，越大表示当天占用越久。");
     }
 
     /// <inheritdoc />

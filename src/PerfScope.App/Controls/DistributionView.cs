@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using PerfScope.App.Infrastructure;
@@ -11,7 +12,7 @@ namespace PerfScope.App.Controls;
 /// </summary>
 internal sealed class DistributionView : Panel
 {
-    private static readonly string[] TabTitles = { "内存分布", "CPU 分布" };
+    private static readonly string[] TabTitles = { Loc.T("内存分布"), Loc.T("CPU 分布") };
 
     private readonly AppTreemapControl _memoryView;
     private readonly AppTreemapControl _cpuView;

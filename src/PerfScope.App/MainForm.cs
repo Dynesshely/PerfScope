@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using PerfScope.App.Controls;
 using PerfScope.App.Forms;
 using PerfScope.App.Infrastructure;
@@ -53,7 +54,7 @@ internal sealed class MainForm : Form
         _themeScale = Theme.DetectDpiScale();
         _theme = Theme.Create(host.Settings.Theme, _themeScale);
 
-        Text = "PerfScope — 应用级 CPU / 内存监控";
+        Text = Loc.T("PerfScope — 应用级 CPU / 内存监控");
         var windowIcon = AppIcon.Get(32);
         if (windowIcon is not null)
         {
@@ -137,7 +138,7 @@ internal sealed class MainForm : Form
         host.SettingsChanged += OnSettingsChanged;
         host.PauseChanged += OnPauseChanged;
 
-        _pauseButton.Text = host.IsPaused ? "继续监控" : "暂停监控";
+        _pauseButton.Text = host.IsPaused ? Loc.T("继续监控") : Loc.T("暂停监控");
     }
 
     /// <inheritdoc />
@@ -281,7 +282,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "打开接入 Agent 窗口失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("打开接入 Agent 窗口失败"), ex);
         }
     }
 
@@ -302,7 +303,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            _host.SafeLog(LogLevel.Warn, "打开分析报告失败", ex);
+            _host.SafeLog(LogLevel.Warn, Loc.T("打开分析报告失败"), ex);
         }
     }
 
@@ -336,7 +337,7 @@ internal sealed class MainForm : Form
         };
         toolbar.Items.Add(title);
 
-        pauseButton = new ToolStripButton("暂停监控")
+        pauseButton = new ToolStripButton(Loc.T("暂停监控"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
             Margin = new Padding(0, 0, Scaled(2), 0),
@@ -344,7 +345,7 @@ internal sealed class MainForm : Form
         pauseButton.Click += (_, _) => TogglePause();
         toolbar.Items.Add(pauseButton);
 
-        var refreshButton = new ToolStripButton("立即刷新")
+        var refreshButton = new ToolStripButton(Loc.T("立即刷新"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
             Margin = new Padding(0, 0, Scaled(2), 0),
@@ -354,7 +355,7 @@ internal sealed class MainForm : Form
 
         toolbar.Items.Add(new ToolStripSeparator());
 
-        var settingsButton = new ToolStripButton("设置")
+        var settingsButton = new ToolStripButton(Loc.T("设置"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
             Margin = new Padding(0, 0, Scaled(2), 0),
@@ -362,7 +363,7 @@ internal sealed class MainForm : Form
         settingsButton.Click += (_, _) => OpenSettings();
         toolbar.Items.Add(settingsButton);
 
-        var historyButton = new ToolStripButton("历史")
+        var historyButton = new ToolStripButton(Loc.T("历史"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
             Margin = new Padding(0, 0, Scaled(2), 0),
@@ -370,28 +371,28 @@ internal sealed class MainForm : Form
         historyButton.Click += (_, _) => OpenHistory();
         toolbar.Items.Add(historyButton);
 
-        var analysisButton = new ToolStripButton("分析")
+        var analysisButton = new ToolStripButton(Loc.T("分析"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
-            ToolTipText = "生成并打开 AI 可读的资源分析报告",
+            ToolTipText = Loc.T("生成并打开 AI 可读的资源分析报告"),
         };
         analysisButton.Click += (_, _) => OpenAnalysis();
         toolbar.Items.Add(analysisButton);
 
-        var agentButton = new ToolStripButton("接入 Agent")
+        var agentButton = new ToolStripButton(Loc.T("接入 Agent"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
-            ToolTipText = "复制一段已填好真实路径与结论的 Prompt，交给你的 AI 分析",
+            ToolTipText = Loc.T("复制一段已填好真实路径与结论的 Prompt，交给你的 AI 分析"),
         };
         agentButton.Click += (_, _) => OpenAgentHandoff();
         toolbar.Items.Add(agentButton);
 
-        _treemapButton = new ToolStripButton("分布视图")
+        _treemapButton = new ToolStripButton(Loc.T("分布视图"))
         {
             DisplayStyle = ToolStripItemDisplayStyle.Text,
             CheckOnClick = true,
             Checked = true,
-            ToolTipText = "显示 / 隐藏右侧内存分布图（面积 = 内存占用）",
+            ToolTipText = Loc.T("显示 / 隐藏右侧内存分布图（面积 = 内存占用）"),
         };
         _treemapButton.CheckedChanged += (_, _) =>
         {
@@ -404,14 +405,14 @@ internal sealed class MainForm : Form
 
         if (_host.IsDemo)
         {
-            toolbar.Items.Add(new ToolStripLabel("演示模式")
+            toolbar.Items.Add(new ToolStripLabel(Loc.T("演示模式"))
             {
                 Tag = _theme.Warning,
                 Font = _theme.UiBoldFont,
             });
         }
 
-        var selfUsageHint = new ToolStripLabel("双击托盘图标唤醒窗口")
+        var selfUsageHint = new ToolStripLabel(Loc.T("双击托盘图标唤醒窗口"))
         {
             Alignment = ToolStripItemAlignment.Right,
             Tag = _theme.TextMuted,
@@ -440,10 +441,10 @@ internal sealed class MainForm : Form
             Margin = Padding.Empty,
         };
 
-        intervalLabel = new ToolStripStatusLabel("采样间隔 —");
-        frameLabel = new ToolStripStatusLabel("帧 —");
-        selfLabel = new ToolStripStatusLabel("自身 —");
-        processLabel = new ToolStripStatusLabel("进程 —") { Spring = true, TextAlign = ContentAlignment.MiddleRight };
+        intervalLabel = new ToolStripStatusLabel(Loc.T("采样间隔 —"));
+        frameLabel = new ToolStripStatusLabel(Loc.T("帧 —"));
+        selfLabel = new ToolStripStatusLabel(Loc.T("自身 —"));
+        processLabel = new ToolStripStatusLabel(Loc.T("进程 —")) { Spring = true, TextAlign = ContentAlignment.MiddleRight };
         var versionLabel = new ToolStripStatusLabel("v" + AppPaths.Version) { ForeColor = _theme.TextMuted };
 
         ToolStripStatusLabel Divider() => new("│")
@@ -593,7 +594,7 @@ internal sealed class MainForm : Form
         SnapshotFrame? frame = _host.Latest;
         if (frame is null)
         {
-            _intervalLabel.Text = "等待首帧采样…";
+            _intervalLabel.Text = Loc.T("等待首帧采样…");
             return;
         }
 
@@ -668,12 +669,11 @@ internal sealed class MainForm : Form
     {
         var settings = _host.Settings;
         int interval = _host.EffectiveIntervalMs;
-        string pauseHint = _host.IsPaused ? " · 已暂停" : string.Empty;
-        _intervalLabel.Text = "采样间隔 " + interval.ToString(System.Globalization.CultureInfo.CurrentCulture) + " ms" + pauseHint;
-        _frameLabel.Text = "帧 " + _frameCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
-        _processLabel.Text = "进程 " + frame.ProcessCount.ToString(System.Globalization.CultureInfo.CurrentCulture) +
-                             " 个 · 应用 " + frame.Apps.Length.ToString(System.Globalization.CultureInfo.CurrentCulture) + " 个";
-        _selfLabel.Text = "自身 " + FormatUtil.Percent(frame.SelfCpuPercent) + " / " + FormatUtil.Bytes(frame.SelfWorkingSetBytes);
+        string pauseHint = _host.IsPaused ? Loc.T(" · 已暂停") : string.Empty;
+        _intervalLabel.Text = Loc.T("采样间隔 {0} ms", interval) + pauseHint;
+        _frameLabel.Text = Loc.T("帧 {0}", _frameCount);
+        _processLabel.Text = Loc.T("{0} 个进程 · {1} 个应用", frame.ProcessCount, frame.Apps.Length);
+        _selfLabel.Text = Loc.T("自身 {0} / {1}", FormatUtil.Percent(frame.SelfCpuPercent), FormatUtil.Bytes(frame.SelfWorkingSetBytes));
         _selfLabel.Visible = settings.ShowSelfUsage;
     }
 
@@ -700,7 +700,7 @@ internal sealed class MainForm : Form
             RebuildTheme();
         }
 
-        _intervalLabel.Text = "采样间隔 " + _host.EffectiveIntervalMs.ToString(System.Globalization.CultureInfo.CurrentCulture) + " ms";
+        _intervalLabel.Text = Loc.T("采样间隔 ") + _host.EffectiveIntervalMs.ToString(System.Globalization.CultureInfo.CurrentCulture) + " ms";
         RefreshView();
     }
 
@@ -711,7 +711,7 @@ internal sealed class MainForm : Form
             return;
         }
 
-        _pauseButton.Text = paused ? "继续监控" : "暂停监控";
+        _pauseButton.Text = paused ? Loc.T("继续监控") : Loc.T("暂停监控");
         RefreshView();
     }
 
@@ -744,7 +744,7 @@ internal sealed class MainForm : Form
                 item.Tag = _theme.Accent;
                 item.Font = _theme.UiBoldFont;
             }
-            else if (item is ToolStripLabel { Text: "演示模式" })
+            else if (item is ToolStripLabel demoLabel && demoLabel.Text == Loc.T("演示模式"))
             {
                 item.Tag = _theme.Warning;
                 item.Font = _theme.UiBoldFont;

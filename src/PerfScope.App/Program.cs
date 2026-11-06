@@ -43,7 +43,7 @@ internal static class Program
         AppHost host;
         try
         {
-            host = AppHost.Create(_isDemo, isMock);
+            host = AppHost.Create(_isDemo, isMock, ParseStringArgument(args, "--lang"));
         }
         catch (Exception ex)
         {
@@ -81,6 +81,20 @@ internal static class Program
                 return;
             }
         }
+    }
+
+    /// <summary>解析 <c>--name value</c> 形式的字符串参数，缺省返回 null。</summary>
+    private static string? ParseStringArgument(string[] args, string name)
+    {
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
+            {
+                return args[i + 1];
+            }
+        }
+
+        return null;
     }
 
     /// <summary>解析 <c>--name 123</c> 形式的整数参数，缺省时返回 <paramref name="fallback"/>。</summary>

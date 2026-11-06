@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.Drawing.Drawing2D;
 
 namespace PerfScope.App.Controls;
@@ -15,7 +16,7 @@ internal static class SparklineRenderer
     /// <param name="fixedMaximum">
     /// 固定的纵轴上限：传 0 表示按当前窗口内的最大值自适应（用于单应用趋势）；
     /// 传 100 表示固定 0~100 百分比刻度（用于整机 CPU / 内存，曲线高度才有绝对含义，
-    /// 也不会因为"最大值就等于当前值"而把曲线顶到天花板上、填充成一大块色块）。
+    /// 也不会因为Loc.T("最大值就等于当前值")而把曲线顶到天花板上、填充成一大块色块）。
     /// </param>
     public static void Draw(
         Graphics graphics,

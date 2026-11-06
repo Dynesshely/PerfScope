@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.Drawing.Drawing2D;
 using PerfScope.App.Infrastructure;
 
@@ -171,8 +172,8 @@ internal sealed class SystemHeaderControl : Control
         _cardRects[0] = left;
         _cardRects[1] = right;
 
-        DrawCard(graphics, left, 0, "整机 CPU", FormatUtil.Percent(_cpuPercent), BuildCpuDetail(), _cpuRing, _cpuPen!, _theme.CpuLine);
-        DrawCard(graphics, right, 1, "物理内存", FormatUtil.Percent(_memoryPercent), BuildMemoryDetail(), _memoryRing, _memoryPen!, _theme.MemoryLine);
+        DrawCard(graphics, left, 0, Loc.T("整机 CPU"), FormatUtil.Percent(_cpuPercent), BuildCpuDetail(), _cpuRing, _cpuPen!, _theme.CpuLine);
+        DrawCard(graphics, right, 1, Loc.T("物理内存"), FormatUtil.Percent(_memoryPercent), BuildMemoryDetail(), _memoryRing, _memoryPen!, _theme.MemoryLine);
 
         if (_hoverCard < 0 && UiDebug.HoverDemo && _cpuRing.Count >= 2)
         {
@@ -194,15 +195,15 @@ internal sealed class SystemHeaderControl : Control
 
     private string BuildCpuDetail()
     {
-        string self = "自身 " + FormatUtil.Percent(_selfCpuPercent) + " / " + FormatUtil.Bytes(_selfWorkingSetBytes);
-        return "进程 " + FormatUtil.Count(_processCount) + " 个 · " + self;
+        string self = Loc.T("自身 {0} / {1}", FormatUtil.Percent(_selfCpuPercent), FormatUtil.Bytes(_selfWorkingSetBytes));
+        return Loc.T("{0} 个进程 · {1}", FormatUtil.Count(_processCount), self);
     }
 
     private string BuildMemoryDetail()
     {
         if (_totalBytes <= 0)
         {
-            return "内存总量未知";
+            return Loc.T("内存总量未知");
         }
 
         long used = Math.Max(0, _totalBytes - _availableBytes);
@@ -257,7 +258,7 @@ internal sealed class SystemHeaderControl : Control
             sparkHeight);
 
         // 预留给坐标轴：左侧刻度、底部时间标签（平时不画，悬停时才显示，但空间一直保留，避免布局跳动）。
-        // 宽度/高度按实测文字尺寸算，避免 150% DPI 下 "100" 被裁成 "00"。
+        // 宽度/高度按实测文字尺寸算，避免 150% DPI 下 "100Loc.T(" 被裁成 ")00"。
         var axisLabelSize = TextRenderer.MeasureText(graphics, "100", _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
         int axisLeft = axisLabelSize.Width + Dp(12);
         int axisBottom = axisLabelSize.Height + Dp(6);
@@ -376,8 +377,8 @@ internal sealed class SystemHeaderControl : Control
         // X 轴：时间跨度
         TimeSpan span = stamps.Count >= 2 ? stamps[^1] - stamps[0] : TimeSpan.Zero;
         string spanText = span.TotalSeconds >= 90
-            ? "-" + (span.TotalSeconds / 60).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " 分"
-            : "-" + span.TotalSeconds.ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " 秒";
+            ? "-" + (span.TotalSeconds / 60).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + Loc.T(" 分")
+            : "-" + span.TotalSeconds.ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + Loc.T(" 秒");
         int xLabelTop = plot.Bottom + Dp(3);
         int xLabelWidth = Math.Max(Dp(56), TextRenderer.MeasureText(graphics, spanText, _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width + Dp(10));
         TextRenderer.DrawText(
@@ -388,10 +389,10 @@ internal sealed class SystemHeaderControl : Control
             _theme.TextMuted,
             TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
 
-        int nowWidth = TextRenderer.MeasureText(graphics, "现在", _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width + Dp(4);
+        int nowWidth = TextRenderer.MeasureText(graphics, Loc.T("现在"), _theme.SmallFont, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width + Dp(4);
         TextRenderer.DrawText(
             graphics,
-            "现在",
+            Loc.T("现在"),
             _theme.SmallFont,
             new Rectangle(plot.Right - nowWidth, xLabelTop, nowWidth, axisLabelSize.Height),
             _theme.TextMuted,
@@ -415,15 +416,15 @@ internal sealed class SystemHeaderControl : Control
         }
 
         // 数值卡片
-        string title = cardIndex == 0 ? "整机 CPU" : "物理内存";
+        string title = cardIndex == 0 ? Loc.T("整机 CPU") : Loc.T("物理内存");
         string valueText = FormatUtil.Percent(value);
         DateTime stamp = stamps.Count == count ? stamps[index] : DateTime.Now;
         double secondsAgo = stamps.Count >= 2 ? (stamps[^1] - stamp).TotalSeconds : 0;
         string agoText = secondsAgo <= 0.5
-            ? "现在"
+            ? Loc.T("现在")
             : secondsAgo < 90
-                ? secondsAgo.ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " 秒前"
-                : (secondsAgo / 60).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " 分钟前";
+                ? secondsAgo.ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + Loc.T(" 秒前")
+                : (secondsAgo / 60).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + Loc.T(" 分钟前");
         string timeText = stamp.ToString("HH:mm:ss", System.Globalization.CultureInfo.CurrentCulture) + " · " + agoText;
 
         DrawTooltip(graphics, title, valueText, timeText, _hoverPoint);

@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using PerfScope.App.Infrastructure;
@@ -35,7 +36,7 @@ internal sealed class AppListControl : Control
     private const int ColumnCount = 6;
 
 
-    private static readonly string[] HeaderTitles = { "应用", "CPU", "内存", "进程数", "磁盘读写", "趋势" };
+    private static readonly string[] HeaderTitles = { Loc.T("应用"), "CPU", Loc.T("内存"), Loc.T("进程数"), Loc.T("磁盘读写"), Loc.T("趋势") };
     private static readonly int[] HeaderSortTargets = { (int)SortColumn.Name, (int)SortColumn.Cpu, (int)SortColumn.Memory, (int)SortColumn.Process, (int)SortColumn.Io, -1 };
 
     private readonly IconProvider _icons;
@@ -412,7 +413,7 @@ internal sealed class AppListControl : Control
         int contentTop = _headerHeight;
         if (_rows.Count == 0)
         {
-            string message = _apps.Length == 0 ? "正在等待第一帧采样数据…" : "当前筛选条件下没有应用";
+            string message = _apps.Length == 0 ? Loc.T("正在等待第一帧采样数据…") : Loc.T("当前筛选条件下没有应用");
             var emptyRect = new Rectangle(0, contentTop, width, Math.Max(0, Height - contentTop));
             TextRenderer.DrawText(
                 graphics,
@@ -639,7 +640,7 @@ internal sealed class AppListControl : Control
         int pathWidth = Math.Max(0, trendCell.Right - pathLeft);
         TextRenderer.DrawText(
             graphics,
-            process.ExecutablePath ?? "(路径不可访问)",
+            process.ExecutablePath ?? Loc.T("(路径不可访问)"),
             _theme.SmallFont,
             new Rectangle(pathLeft, rowRect.Y, pathWidth, rowRect.Height),
             _theme.TextMuted,
@@ -729,7 +730,7 @@ internal sealed class AppListControl : Control
         var lines = WrapText(graphics, _tipDetail, _theme.SmallFont, maxWidth - Dp(20));
 
         int pad = Dp(10);
-        int lineHeight = TextRenderer.MeasureText(graphics, "国Ag", _theme.SmallFont).Height;
+        int lineHeight = TextRenderer.MeasureText(graphics, Loc.T("国Ag"), _theme.SmallFont).Height;
         int contentWidth = titleSize.Width;
         foreach (var line in lines)
         {

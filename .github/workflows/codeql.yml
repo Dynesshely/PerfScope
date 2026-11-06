@@ -1,0 +1,59 @@
+name: CodeQL
+
+# 代码安全扫描：C# 源码 + GitHub Actions 工作流。
+# push/PR 到 main 时执行，另外每周定时跑一次，覆盖依赖/规则库更新后的复查。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 每周一 03:17 UTC（北京时间 11:17）
+    - cron: '17 3 * * 1'
+
+permissions:
+  actions: read
+  contents: read
+  packages: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # csharp 走 autobuild；actions 直接分析工作流文件，不需要编译
+        language: [csharp, actions]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          # CodeQL 的 autobuild 需要能编译整个解决方案（含 WinForms）
+          dotnet-version: '10.0.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        if: matrix.language == 'csharp'
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

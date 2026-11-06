@@ -1,0 +1,78 @@
+name: CI
+
+# 质量门：push 到 main / 向 main 提交 PR 时执行编译与单元测试。
+#
+# 关于 `dotnet format --verify-no-changes`：
+# 本仓库目前没有 .editorconfig，且 src 中仍有少量历史遗留的空白/缩进差异
+# （PerfScope.Core/Grouping/AppClassifier.cs、PerfScope.Core/Settings/SettingsValidator.cs），
+# 修复这些差异必须改动 src 代码，因此格式检查以独立的 advisory 作业运行
+# continue-on-error 即可升级为阻塞门禁。
+#
+# 注意：windows-latest 上没有 makensis，CI 不做任何打包；打包只在 release.yml 里做。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & test
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # 具体版本由仓库根目录的 global.json 锁定（10.0.402，rollForward: latestFeature）
+          dotnet-version: '10.0.x'
+
+      - name: Build (Release)
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          dotnet build -c Release --nologo
+          if ($LASTEXITCODE -ne 0) { throw "编译失败（exit $LASTEXITCODE）" }
+
+      - name: Run tests
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          ./scripts/run-tests.ps1 -Configuration Release
+
+  format:
+    name: Format check (advisory)
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Check formatting
+        shell: pwsh
+        # 只报告、不阻塞；原因见文件顶部注释。
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          dotnet format --verify-no-changes --verbosity minimal
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host '::warning::存在格式差异：本地运行 dotnet format 后提交（当前为 advisory，不会让 CI 失败）'
+            exit 1
+          }

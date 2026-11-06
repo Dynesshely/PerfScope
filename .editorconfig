@@ -1,0 +1,20 @@
+root = true
+
+# 仓库统一使用 LF 行尾（git 已按此存储），避免跨平台 format 报空白差异
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+trim_trailing_whitespace = true
+
+[*.{cs,csx}]
+indent_style = space
+indent_size = 4
+dotnet_sort_system_directives_first = true
+
+[*.{json,yml,yaml,xml,resx,csproj,props,targets}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.Diagnostics;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core;
@@ -11,11 +12,12 @@ namespace PerfScope.App.Forms;
 /// </summary>
 internal sealed class SettingsForm : Form
 {
-    private static readonly string[] CpuModeTexts = { "整机百分比（0~100，同任务管理器）", "单核百分比（单线程跑满 = 100）" };
-    private static readonly string[] MemoryModeTexts = { "工作集（物理驻留）", "私有字节（更接近真实占用）" };
-    private static readonly string[] CloseBehaviorTexts = { "最小化到托盘", "直接退出程序" };
-    private static readonly string[] ThemeTexts = { "深色", "浅色" };
-    private static readonly string[] LogLevelTexts = { "错误", "警告", "信息", "调试" };
+    private static readonly string[] CpuModeTexts = { Loc.T("整机百分比（0~100，同任务管理器）"), Loc.T("单核百分比（单线程跑满 = 100）") };
+    private static readonly string[] MemoryModeTexts = { Loc.T("工作集（物理驻留）"), Loc.T("私有字节（更接近真实占用）") };
+    private static readonly string[] CloseBehaviorTexts = { Loc.T("最小化到托盘"), Loc.T("直接退出程序") };
+    private static readonly string[] ThemeTexts = { Loc.T("深色"), Loc.T("浅色") };
+    private static readonly string[] LanguageTexts = { Loc.T("跟随系统"), "中文", "English" };
+    private static readonly string[] LogLevelTexts = { Loc.T("错误"), Loc.T("警告"), Loc.T("信息"), Loc.T("调试") };
 
     private readonly AppHost _host;
     private readonly Theme _theme;
@@ -59,6 +61,7 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _showSelfUsage;
     private readonly CheckBox _showSystemGroups;
     private readonly ComboBox _themeBox;
+    private readonly ComboBox _languageBox;
 
     private readonly CheckBox _enableAlerts;
     private readonly NumericUpDown _alertCpu;
@@ -79,7 +82,7 @@ internal sealed class SettingsForm : Form
         _rules = _working.Rules.Select(rule => rule.Clone()).ToList();
         _theme = Theme.Create(_working.Theme, _scale);
 
-        Text = "PerfScope 设置";
+        Text = Loc.T("PerfScope 设置");
         AutoScaleMode = AutoScaleMode.None;
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.Sizable;
@@ -95,18 +98,18 @@ internal sealed class SettingsForm : Form
         // ---------- 控件实例化 ----------
         _sampleInterval = Num(500, 10000, 100, _working.SampleIntervalMs);
         _uiInterval = Num(250, 10000, 50, _working.UiRefreshIntervalMs);
-        _adaptive = Check("主窗口隐藏时自动降频", _working.AdaptiveThrottleWhenHidden);
+        _adaptive = Check(Loc.T("主窗口隐藏时自动降频"), _working.AdaptiveThrottleWhenHidden);
         _hiddenInterval = Num(1000, 60000, 500, _working.HiddenSampleIntervalMs);
         _smoothing = Num(1, 15, 1, _working.SmoothingWindow);
 
         _cpuMode = Combo(CpuModeTexts, (int)_working.CpuMode);
         _memoryMode = Combo(MemoryModeTexts, (int)_working.MemoryMode);
 
-        _groupByProduct = Check("按版本信息里的产品名归并", _working.GroupByProductName);
-        _groupByInstallRoot = Check("按安装根目录归并", _working.GroupByInstallRoot);
-        _inheritParent = Check("子进程继承父进程的应用归属", _working.InheritParentGroup);
-        _mergeSystem = Check("把系统进程合并为功能模块（WSL / 图形 / 安全 / 内核…）", _working.MergeWindowsSystemProcesses);
-        _versionCache = Check("缓存 exe 版本信息与目录解析结果", _working.UseVersionInfoCache);
+        _groupByProduct = Check(Loc.T("按版本信息里的产品名归并"), _working.GroupByProductName);
+        _groupByInstallRoot = Check(Loc.T("按安装根目录归并"), _working.GroupByInstallRoot);
+        _inheritParent = Check(Loc.T("子进程继承父进程的应用归属"), _working.InheritParentGroup);
+        _mergeSystem = Check(Loc.T("把系统进程合并为功能模块（WSL / 图形 / 安全 / 内核…）"), _working.MergeWindowsSystemProcesses);
+        _versionCache = Check(Loc.T("缓存 exe 版本信息与目录解析结果"), _working.UseVersionInfoCache);
         _unknownGroup = Input(_working.UnknownGroupName);
         _systemGroup = Input(_working.SystemGroupName);
         _ruleList = BuildRuleList();
@@ -114,22 +117,23 @@ internal sealed class SettingsForm : Form
         _memoryRetention = Num(5, 1440, 5, _working.MemoryRetentionMinutes);
         _diskRetention = Num(0, 365, 1, _working.DiskRetentionDays);
         _trendSlots = Num(1, 64, 1, _working.TrendAppSlots);
-        _diskHistory = Check("把历史写入磁盘（关闭后仅内存保留）", _working.EnableDiskHistory);
-        _insightEnabled = Check("持续产出分析历史（事件流 + 报告）", _working.InsightEnabled);
+        _diskHistory = Check(Loc.T("把历史写入磁盘（关闭后仅内存保留）"), _working.EnableDiskHistory);
+        _insightEnabled = Check(Loc.T("持续产出分析历史（事件流 + 报告）"), _working.InsightEnabled);
         _insightCpuPercent = Num(1, 100, 1, _working.InsightAppCpuPercent);
         _insightCpuSeconds = Num(5, 600, 5, _working.InsightAppCpuSeconds);
         _insightGrowth = Num(5, 10000, 5, _working.InsightMemoryGrowthMbPerMinute);
         _insightDigest = Num(1, 60, 1, _working.InsightDigestMinutes);
 
         _topN = Num(5, 200, 1, _working.TopN);
-        _startMinimized = Check("启动时最小化到托盘", _working.StartMinimized);
-        _runAtStartup = Check("开机自动启动（写入当前用户注册表）", _working.RunAtStartup);
+        _startMinimized = Check(Loc.T("启动时最小化到托盘"), _working.StartMinimized);
+        _runAtStartup = Check(Loc.T("开机自动启动（写入当前用户注册表）"), _working.RunAtStartup);
         _closeBehavior = Combo(CloseBehaviorTexts, (int)_working.CloseBehavior);
-        _showSelfUsage = Check("在状态栏显示监控器自身开销", _working.ShowSelfUsage);
-        _showSystemGroups = Check("在列表中显示系统模块与系统进程组", _working.ShowSystemProcesses);
+        _showSelfUsage = Check(Loc.T("在状态栏显示监控器自身开销"), _working.ShowSelfUsage);
+        _showSystemGroups = Check(Loc.T("在列表中显示系统模块与系统进程组"), _working.ShowSystemProcesses);
         _themeBox = Combo(ThemeTexts, string.Equals(_working.Theme, "light", StringComparison.OrdinalIgnoreCase) ? 1 : 0);
+        _languageBox = Combo(LanguageTexts, LanguageIndex(_working.Language));
 
-        _enableAlerts = Check("启用阈值气泡告警", _working.EnableAlerts);
+        _enableAlerts = Check(Loc.T("启用阈值气泡告警"), _working.EnableAlerts);
         _alertCpu = Num(10, 100, 1, _working.AlertCpuPercent);
         _alertMemory = Num(10, 100, 1, _working.AlertMemoryPercent);
         _alertCooldown = Num(30, 3600, 30, _working.AlertCooldownSeconds);
@@ -144,99 +148,100 @@ internal sealed class SettingsForm : Form
             Font = _theme.UiFont,
         };
 
-        var samplingPage = new TabPage("采样") { BackColor = _theme.Background };
+        var samplingPage = new TabPage(Loc.T("采样")) { BackColor = _theme.Background };
         var sampling = CreateContent(samplingPage);
-        AddSectionTitle(sampling, "采样节奏");
-        AddRow(sampling, "采样间隔（毫秒）", _sampleInterval);
-        AddRow(sampling, "界面刷新间隔（毫秒）", _uiInterval);
-        AddSectionTitle(sampling, "隐藏窗口时降频（托盘常驻省电省 CPU）");
-        AddRow(sampling, "自适应降频", _adaptive);
-        AddRow(sampling, "隐藏时采样间隔（毫秒）", _hiddenInterval);
-        AddSectionTitle(sampling, "平滑");
-        AddRow(sampling, "平滑窗口（采样点数）", _smoothing);
+        AddSectionTitle(sampling, Loc.T("采样节奏"));
+        AddRow(sampling, Loc.T("采样间隔（毫秒）"), _sampleInterval);
+        AddRow(sampling, Loc.T("界面刷新间隔（毫秒）"), _uiInterval);
+        AddSectionTitle(sampling, Loc.T("隐藏窗口时降频（托盘常驻省电省 CPU）"));
+        AddRow(sampling, Loc.T("自适应降频"), _adaptive);
+        AddRow(sampling, Loc.T("隐藏时采样间隔（毫秒）"), _hiddenInterval);
+        AddSectionTitle(sampling, Loc.T("平滑"));
+        AddRow(sampling, Loc.T("平滑窗口（采样点数）"), _smoothing);
         tabs.TabPages.Add(samplingPage);
 
-        var caliberPage = new TabPage("口径") { BackColor = _theme.Background };
+        var caliberPage = new TabPage(Loc.T("口径")) { BackColor = _theme.Background };
         var caliber = CreateContent(caliberPage);
-        AddSectionTitle(caliber, "CPU 与内存的展示口径");
-        AddRow(caliber, "CPU 口径", _cpuMode);
-        AddRow(caliber, "内存口径", _memoryMode);
+        AddSectionTitle(caliber, Loc.T("CPU 与内存的展示口径"));
+        AddRow(caliber, Loc.T("CPU 口径"), _cpuMode);
+        AddRow(caliber, Loc.T("内存口径"), _memoryMode);
         tabs.TabPages.Add(caliberPage);
 
-        var groupingPage = new TabPage("归并") { BackColor = _theme.Background };
+        var groupingPage = new TabPage(Loc.T("归并")) { BackColor = _theme.Background };
         var grouping = CreateContent(groupingPage);
-        AddSectionTitle(grouping, "应用归并策略");
-        AddRow(grouping, "产品名归并", _groupByProduct);
-        AddRow(grouping, "安装目录归并", _groupByInstallRoot);
-        AddRow(grouping, "父进程继承", _inheritParent);
-        AddRow(grouping, "合并系统进程", _mergeSystem);
-        AddRow(grouping, "版本信息缓存", _versionCache);
-        AddRow(grouping, "兜底组名", _unknownGroup);
-        AddRow(grouping, "系统组名", _systemGroup);
-        AddSectionTitle(grouping, "自定义规则（按顺序优先匹配，双击可编辑）");
+        AddSectionTitle(grouping, Loc.T("应用归并策略"));
+        AddRow(grouping, Loc.T("产品名归并"), _groupByProduct);
+        AddRow(grouping, Loc.T("安装目录归并"), _groupByInstallRoot);
+        AddRow(grouping, Loc.T("父进程继承"), _inheritParent);
+        AddRow(grouping, Loc.T("合并系统进程"), _mergeSystem);
+        AddRow(grouping, Loc.T("版本信息缓存"), _versionCache);
+        AddRow(grouping, Loc.T("兜底组名"), _unknownGroup);
+        AddRow(grouping, Loc.T("系统组名"), _systemGroup);
+        AddSectionTitle(grouping, Loc.T("自定义规则（按顺序优先匹配，双击可编辑）"));
         AddWideControl(grouping, BuildRuleEditorPanel(), Scaled(232));
         tabs.TabPages.Add(groupingPage);
 
-        var retentionPage = new TabPage("留存") { BackColor = _theme.Background };
+        var retentionPage = new TabPage(Loc.T("留存")) { BackColor = _theme.Background };
         var retention = CreateContent(retentionPage);
-        AddSectionTitle(retention, "历史与趋势留存");
-        AddRow(retention, "内存保留（分钟）", _memoryRetention);
-        AddRow(retention, "磁盘保留（天）", _diskRetention);
-        AddRow(retention, "趋势应用数", _trendSlots);
-        AddRow(retention, "写入磁盘", _diskHistory);
-        AddSectionTitle(retention, "智能分析（产出可被 AI 直接消费的历史）");
-        AddRow(retention, "启用分析", _insightEnabled);
-        AddRow(retention, "CPU 片段阈值（%）", _insightCpuPercent);
-        AddRow(retention, "片段最短时长（秒）", _insightCpuSeconds);
-        AddRow(retention, "内存增长阈值（MB/分）", _insightGrowth);
-        AddRow(retention, "摘要窗口（分钟）", _insightDigest);
+        AddSectionTitle(retention, Loc.T("历史与趋势留存"));
+        AddRow(retention, Loc.T("内存保留（分钟）"), _memoryRetention);
+        AddRow(retention, Loc.T("磁盘保留（天）"), _diskRetention);
+        AddRow(retention, Loc.T("趋势应用数"), _trendSlots);
+        AddRow(retention, Loc.T("写入磁盘"), _diskHistory);
+        AddSectionTitle(retention, Loc.T("智能分析（产出可被 AI 直接消费的历史）"));
+        AddRow(retention, Loc.T("启用分析"), _insightEnabled);
+        AddRow(retention, Loc.T("CPU 片段阈值（%）"), _insightCpuPercent);
+        AddRow(retention, Loc.T("片段最短时长（秒）"), _insightCpuSeconds);
+        AddRow(retention, Loc.T("内存增长阈值（MB/分）"), _insightGrowth);
+        AddRow(retention, Loc.T("摘要窗口（分钟）"), _insightDigest);
         tabs.TabPages.Add(retentionPage);
 
-        var uiPage = new TabPage("界面") { BackColor = _theme.Background };
+        var uiPage = new TabPage(Loc.T("界面")) { BackColor = _theme.Background };
         var ui = CreateContent(uiPage);
-        AddSectionTitle(ui, "主窗口");
-        AddRow(ui, "列表显示行数", _topN);
-        AddRow(ui, "显示自身开销", _showSelfUsage);
-        AddRow(ui, "显示系统模块组", _showSystemGroups);
-        AddRow(ui, "主题", _themeBox);
-        AddSectionTitle(ui, "启动与关闭");
-        AddRow(ui, "启动最小化", _startMinimized);
-        AddRow(ui, "开机自动启动", _runAtStartup);
-        AddRow(ui, "关闭按钮行为", _closeBehavior);
+        AddSectionTitle(ui, Loc.T("主窗口"));
+        AddRow(ui, Loc.T("列表显示行数"), _topN);
+        AddRow(ui, Loc.T("显示自身开销"), _showSelfUsage);
+        AddRow(ui, Loc.T("显示系统模块组"), _showSystemGroups);
+        AddRow(ui, Loc.T("主题"), _themeBox);
+        AddRow(ui, Loc.T("语言"), _languageBox);
+        AddSectionTitle(ui, Loc.T("启动与关闭"));
+        AddRow(ui, Loc.T("启动最小化"), _startMinimized);
+        AddRow(ui, Loc.T("开机自动启动"), _runAtStartup);
+        AddRow(ui, Loc.T("关闭按钮行为"), _closeBehavior);
         tabs.TabPages.Add(uiPage);
 
-        var alertPage = new TabPage("告警") { BackColor = _theme.Background };
+        var alertPage = new TabPage(Loc.T("告警")) { BackColor = _theme.Background };
         var alert = CreateContent(alertPage);
-        AddSectionTitle(alert, "阈值气泡告警（托盘气泡）");
-        AddRow(alert, "启用告警", _enableAlerts);
-        AddRow(alert, "CPU 阈值（%）", _alertCpu);
-        AddRow(alert, "内存阈值（%）", _alertMemory);
-        AddRow(alert, "冷却时间（秒）", _alertCooldown);
+        AddSectionTitle(alert, Loc.T("阈值气泡告警（托盘气泡）"));
+        AddRow(alert, Loc.T("启用告警"), _enableAlerts);
+        AddRow(alert, Loc.T("CPU 阈值（%）"), _alertCpu);
+        AddRow(alert, Loc.T("内存阈值（%）"), _alertMemory);
+        AddRow(alert, Loc.T("冷却时间（秒）"), _alertCooldown);
         tabs.TabPages.Add(alertPage);
 
-        var diagnosticsPage = new TabPage("诊断") { BackColor = _theme.Background };
+        var diagnosticsPage = new TabPage(Loc.T("诊断")) { BackColor = _theme.Background };
         var diagnostics = CreateContent(diagnosticsPage);
-        AddSectionTitle(diagnostics, "日志");
-        AddRow(diagnostics, "日志级别（重启后生效）", _logLevel);
-        AddRow(diagnostics, "日志大小上限（KB，重启后生效）", _logMaxKb);
+        AddSectionTitle(diagnostics, Loc.T("日志"));
+        AddRow(diagnostics, Loc.T("日志级别（重启后生效）"), _logLevel);
+        AddRow(diagnostics, Loc.T("日志大小上限（KB，重启后生效）"), _logMaxKb);
         AddWideControl(diagnostics, new Label
         {
             AutoSize = true,
             ForeColor = _theme.TextMuted,
             Font = _theme.SmallFont,
-            Text = "说明：日志文件由 Core 的 FileLog 持有，没有热更新通道，改动会在下次启动时生效；其余设置保存后立即生效。",
+            Text = Loc.T("说明：日志文件由 Core 的 FileLog 持有，没有热更新通道，改动会在下次启动时生效；其余设置保存后立即生效。"),
         }, Scaled(34));
-        AddSectionTitle(diagnostics, "数据目录");
-        var openFolder = new Button { Text = "打开数据目录", Width = Scaled(140), Height = Scaled(30) };
+        AddSectionTitle(diagnostics, Loc.T("数据目录"));
+        var openFolder = new Button { Text = Loc.T("打开数据目录"), Width = Scaled(140), Height = Scaled(30) };
         openFolder.Click += OnOpenDataDirectory;
-        AddRow(diagnostics, "数据位置", openFolder);
+        AddRow(diagnostics, Loc.T("数据位置"), openFolder);
         var pathHint = new Label
         {
             AutoSize = true,
             MaximumSize = new Size(Scaled(520), 0),
             ForeColor = _theme.TextMuted,
             Font = _theme.SmallFont,
-            Text = "设置：" + _host.SettingsStore.SettingsPath + Environment.NewLine + "数据根：" + AppPaths.DataDirectory,
+            Text = Loc.T("设置：") + _host.SettingsStore.SettingsPath + Environment.NewLine + Loc.T("数据根：") + AppPaths.DataDirectory,
         };
         AddWideControl(diagnostics, pathHint, Scaled(52));
         tabs.TabPages.Add(diagnosticsPage);
@@ -255,10 +260,10 @@ internal sealed class SettingsForm : Form
             BackColor = _theme.Background,
         };
 
-        var saveButton = new Button { Text = "保存", Width = Scaled(96), Height = Scaled(32) };
+        var saveButton = new Button { Text = Loc.T("保存"), Width = Scaled(96), Height = Scaled(32) };
         saveButton.Click += OnSave;
-        var cancelButton = new Button { Text = "取消", Width = Scaled(96), Height = Scaled(32), DialogResult = DialogResult.Cancel };
-        var resetButton = new Button { Text = "恢复默认", Width = Scaled(110), Height = Scaled(32) };
+        var cancelButton = new Button { Text = Loc.T("取消"), Width = Scaled(96), Height = Scaled(32), DialogResult = DialogResult.Cancel };
+        var resetButton = new Button { Text = Loc.T("恢复默认"), Width = Scaled(110), Height = Scaled(32) };
         resetButton.Click += OnResetDefaults;
         actions.Controls.Add(saveButton);
         actions.Controls.Add(cancelButton);
@@ -282,6 +287,20 @@ internal sealed class SettingsForm : Form
     private int Scaled(int value) => (int)Math.Round(value * _scale);
 
     private Size Scaled(int width, int height) => new(Scaled(width), Scaled(height));
+
+    private static int LanguageIndex(string? code) => code switch
+    {
+        "zh" => 1,
+        "en" => 2,
+        _ => 0,
+    };
+
+    private static string LanguageCode(int index) => index switch
+    {
+        1 => "zh",
+        2 => "en",
+        _ => "system",
+    };
 
     private NumericUpDown Num(decimal minimum, decimal maximum, decimal step, decimal value) => new ThemedNumericUpDown(_theme)
     {
@@ -401,11 +420,11 @@ internal sealed class SettingsForm : Form
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
         };
-        list.Columns.Add("启用", Scaled(62));
-        list.Columns.Add("匹配方式", Scaled(100));
-        list.Columns.Add("模式", Scaled(200));
-        list.Columns.Add("动作", Scaled(100));
-        list.Columns.Add("目标", Scaled(150));
+        list.Columns.Add(Loc.T("启用"), Scaled(62));
+        list.Columns.Add(Loc.T("匹配方式"), Scaled(100));
+        list.Columns.Add(Loc.T("模式"), Scaled(200));
+        list.Columns.Add(Loc.T("动作"), Scaled(100));
+        list.Columns.Add(Loc.T("目标"), Scaled(150));
         list.ItemChecked += OnRuleItemChecked;
         list.DoubleClick += (_, _) => EditRule();
         return list;
@@ -432,11 +451,11 @@ internal sealed class SettingsForm : Form
             BackColor = _theme.Background,
             Padding = new Padding(Scaled(8), 0, 0, 0),
         };
-        buttons.Controls.Add(RuleButton("新增", (_, _) => AddRule()));
-        buttons.Controls.Add(RuleButton("编辑", (_, _) => EditRule()));
-        buttons.Controls.Add(RuleButton("删除", (_, _) => RemoveRule()));
-        buttons.Controls.Add(RuleButton("上移", (_, _) => MoveRule(-1)));
-        buttons.Controls.Add(RuleButton("下移", (_, _) => MoveRule(1)));
+        buttons.Controls.Add(RuleButton(Loc.T("新增"), (_, _) => AddRule()));
+        buttons.Controls.Add(RuleButton(Loc.T("编辑"), (_, _) => EditRule()));
+        buttons.Controls.Add(RuleButton(Loc.T("删除"), (_, _) => RemoveRule()));
+        buttons.Controls.Add(RuleButton(Loc.T("上移"), (_, _) => MoveRule(-1)));
+        buttons.Controls.Add(RuleButton(Loc.T("下移"), (_, _) => MoveRule(1)));
 
         _ruleList.Dock = DockStyle.Fill;
         _ruleList.Margin = Padding.Empty;
@@ -467,19 +486,19 @@ internal sealed class SettingsForm : Form
             _ruleList.Items.Clear();
             foreach (var rule in _rules)
             {
-                var item = new ListViewItem(rule.Enabled ? "是" : "否") { Checked = rule.Enabled };
+                var item = new ListViewItem(rule.Enabled ? Loc.T("是") : Loc.T("否")) { Checked = rule.Enabled };
                 item.SubItems.Add(rule.Match switch
                 {
-                    AppRuleMatch.PathContains => "路径包含",
-                    AppRuleMatch.ProductName => "产品名",
-                    _ => "映像名",
+                    AppRuleMatch.PathContains => Loc.T("路径包含"),
+                    AppRuleMatch.ProductName => Loc.T("产品名"),
+                    _ => Loc.T("映像名"),
                 });
                 item.SubItems.Add(rule.Pattern);
                 item.SubItems.Add(rule.Action switch
                 {
-                    AppRuleAction.Rename => "只改显示名",
-                    AppRuleAction.Exclude => "排除",
-                    _ => "合并到应用",
+                    AppRuleAction.Rename => Loc.T("只改显示名"),
+                    AppRuleAction.Exclude => Loc.T("排除"),
+                    _ => Loc.T("合并到应用"),
                 });
                 item.SubItems.Add(rule.Target ?? string.Empty);
                 _ruleList.Items.Add(item);
@@ -508,12 +527,12 @@ internal sealed class SettingsForm : Form
         }
 
         _rules[e.Item.Index].Enabled = e.Item.Checked;
-        e.Item.Text = e.Item.Checked ? "是" : "否";
+        e.Item.Text = e.Item.Checked ? Loc.T("是") : Loc.T("否");
     }
 
     private void AddRule()
     {
-        using var dialog = new RuleEditDialog(_theme, new AppRule(), "新增归并规则");
+        using var dialog = new RuleEditDialog(_theme, new AppRule(), Loc.T("新增归并规则"));
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -528,11 +547,11 @@ internal sealed class SettingsForm : Form
         int index = SelectedRuleIndex();
         if (index < 0)
         {
-            MessageBox.Show(this, "请先选中一条规则。", "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, Loc.T("请先选中一条规则。"), "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
-        using var dialog = new RuleEditDialog(_theme, _rules[index], "编辑归并规则");
+        using var dialog = new RuleEditDialog(_theme, _rules[index], Loc.T("编辑归并规则"));
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -547,7 +566,7 @@ internal sealed class SettingsForm : Form
         int index = SelectedRuleIndex();
         if (index < 0)
         {
-            MessageBox.Show(this, "请先选中一条规则。", "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, Loc.T("请先选中一条规则。"), "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
@@ -592,7 +611,7 @@ internal sealed class SettingsForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "打开数据目录失败：" + ex.Message, "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, Loc.T("打开数据目录失败：") + ex.Message, "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -600,7 +619,7 @@ internal sealed class SettingsForm : Form
     {
         var confirm = MessageBox.Show(
             this,
-            "确定把所有设置恢复为出厂默认值吗？（不会立即保存，可点取消放弃）",
+            Loc.T("确定把所有设置恢复为出厂默认值吗？（不会立即保存，可点取消放弃）"),
             "PerfScope",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question);
@@ -651,6 +670,7 @@ internal sealed class SettingsForm : Form
         _showSelfUsage.Checked = _working.ShowSelfUsage;
         _showSystemGroups.Checked = _working.ShowSystemProcesses;
         _themeBox.SelectedIndex = string.Equals(_working.Theme, "light", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+        _languageBox.SelectedIndex = LanguageIndex(_working.Language);
 
         _enableAlerts.Checked = _working.EnableAlerts;
         SetNum(_alertCpu, _working.AlertCpuPercent);
@@ -673,7 +693,7 @@ internal sealed class SettingsForm : Form
 
         if (_adaptive.Checked && _hiddenInterval.Value < _sampleInterval.Value)
         {
-            message = "隐藏时的采样间隔不能小于正常采样间隔，否则窗口隐藏后反而更耗资源。";
+            message = Loc.T("隐藏时的采样间隔不能小于正常采样间隔，否则窗口隐藏后反而更耗资源。");
             focusControl = _hiddenInterval;
             return false;
         }
@@ -681,7 +701,7 @@ internal sealed class SettingsForm : Form
         string unknownGroup = _unknownGroup.Text.Trim();
         if (unknownGroup.Length == 0)
         {
-            message = "兜底组名不能为空。";
+            message = Loc.T("兜底组名不能为空。");
             focusControl = _unknownGroup;
             return false;
         }
@@ -689,14 +709,14 @@ internal sealed class SettingsForm : Form
         string systemGroup = _systemGroup.Text.Trim();
         if (systemGroup.Length == 0)
         {
-            message = "系统组名不能为空。";
+            message = Loc.T("系统组名不能为空。");
             focusControl = _systemGroup;
             return false;
         }
 
         if (_mergeSystem.Checked && string.Equals(unknownGroup, systemGroup, StringComparison.OrdinalIgnoreCase))
         {
-            message = "兜底组名与系统组名不能相同，否则无法区分系统组。";
+            message = Loc.T("兜底组名与系统组名不能相同，否则无法区分系统组。");
             focusControl = _systemGroup;
             return false;
         }
@@ -706,7 +726,7 @@ internal sealed class SettingsForm : Form
             var rule = _rules[i];
             if (string.IsNullOrWhiteSpace(rule.Pattern))
             {
-                message = "第 " + (i + 1).ToString(System.Globalization.CultureInfo.CurrentCulture) + " 条自定义规则没有填写匹配模式。";
+                message = Loc.T("第 ") + (i + 1).ToString(System.Globalization.CultureInfo.CurrentCulture) + Loc.T(" 条自定义规则没有填写匹配模式。");
                 focusControl = _ruleList;
                 _ruleList.Items[i].Selected = true;
                 return false;
@@ -714,7 +734,7 @@ internal sealed class SettingsForm : Form
 
             if (rule.Action != AppRuleAction.Exclude && string.IsNullOrWhiteSpace(rule.Target))
             {
-                message = "第 " + (i + 1).ToString(System.Globalization.CultureInfo.CurrentCulture) + " 条自定义规则缺少目标名称。";
+                message = Loc.T("第 ") + (i + 1).ToString(System.Globalization.CultureInfo.CurrentCulture) + Loc.T(" 条自定义规则缺少目标名称。");
                 focusControl = _ruleList;
                 _ruleList.Items[i].Selected = true;
                 return false;
@@ -756,6 +776,7 @@ internal sealed class SettingsForm : Form
         _working.ShowSelfUsage = _showSelfUsage.Checked;
         _working.ShowSystemProcesses = _showSystemGroups.Checked;
         _working.Theme = _themeBox.SelectedIndex == 1 ? "light" : "dark";
+        _working.Language = LanguageCode(_languageBox.SelectedIndex);
 
         _working.EnableAlerts = _enableAlerts.Checked;
         _working.AlertCpuPercent = (int)_alertCpu.Value;
@@ -772,7 +793,7 @@ internal sealed class SettingsForm : Form
     {
         if (!CollectAndValidate(out string? message, out Control? focusControl))
         {
-            MessageBox.Show(this, message ?? "设置校验未通过。", "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, message ?? Loc.T("设置校验未通过。"), "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             focusControl?.Focus();
             if (focusControl is NumericUpDown number)
             {
@@ -786,7 +807,7 @@ internal sealed class SettingsForm : Form
         {
             MessageBox.Show(
                 this,
-                _host.LastError ?? "保存设置失败，详情见日志。",
+                _host.LastError ?? Loc.T("保存设置失败，详情见日志。"),
                 "PerfScope",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);

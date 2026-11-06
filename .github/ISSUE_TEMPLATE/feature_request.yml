@@ -1,0 +1,81 @@
+name: Feature request
+description: Suggest an idea or improvement for PerfScope
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape PerfScope! Please search
+        [existing issues](https://github.com/Dynesshely/PerfScope/issues) first — a short, focused request
+        is much easier to evaluate than a long list.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation where PerfScope does not help you today. Concrete examples beat generic wishes.
+      placeholder: |
+        When I compile a large solution I want to know whether the compiler or the linker is responsible,
+        but both end up in the same application row because ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should PerfScope do? A rough sketch of the UI or data model is welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing settings, other tools, or workarounds you already tried.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Application grouping / custom rules
+        - Memory or CPU distribution view
+        - Header cards / trends
+        - History / insights / report
+        - Settings / theme / accessibility
+        - Tray behaviour / notifications
+        - Agent prompt / AI workflow
+        - CLI
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to contribute this yourself?
+      options:
+        - "Yes, I can open a pull request"
+        - "Maybe, with some guidance"
+        - "No, I am only suggesting the idea"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)
+      description: Mockups, links, related issues, or examples from other tools.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: This request does not require network access, telemetry or administrator rights.
+          required: true

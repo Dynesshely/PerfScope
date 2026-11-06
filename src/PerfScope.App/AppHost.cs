@@ -106,10 +106,13 @@ internal sealed class AppHost : IDisposable
     public event EventHandler<bool>? PauseChanged;
 
     /// <summary>按运行模式创建服务。演示模式完全不触碰真实数据目录与注册表。</summary>
-    public static AppHost Create(bool demo, bool mock = false)
+    public static AppHost Create(bool demo, bool mock = false, string? languageOverride = null)
     {
         if (demo || mock)
         {
+            // 演示 / 截图模式没有配置文件，语言用命令行覆盖值（--lang en 之类），默认跟随系统
+            Localization.Loc.Apply(languageOverride ?? Localization.Loc.System);
+
             var demoSettings = new AppSettings();
             IMonitorEngine demoEngine = mock ? new MockEngine(demoSettings) : new DemoEngine(demoSettings);
             var demoHistory = new DemoHistory(demoSettings);
@@ -122,6 +125,9 @@ internal sealed class AppHost : IDisposable
         // 先拿默认设置，再据此创建日志，最后用带日志的设置存储重读一次，保证启动失败原因可追溯。
         var bootstrapStore = CoreRuntime.CreateSettingsStore(NullLog.Instance);
         AppSettings settings = bootstrapStore.Load();
+
+        // 语言必须在任何 UI 构造前确定（文案在构造时求值）
+        Localization.Loc.Apply(languageOverride ?? settings.Language);
         ILog log = CoreRuntime.CreateLogger(settings);
         ISettingsStore settingsStore = CoreRuntime.CreateSettingsStore(log);
         IMonitorEngine engine = CoreRuntime.CreateEngine(settings, log);

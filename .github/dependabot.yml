@@ -1,0 +1,40 @@
+version: 2
+
+# 每周检查一次依赖更新：NuGet 包 + GitHub Actions。
+# 运行时依赖为零（Core/App 只用 BCL + WinForms），这里的 NuGet 更新实际只涉及测试项目。
+
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+      include: scope
+    groups:
+      nuget-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"

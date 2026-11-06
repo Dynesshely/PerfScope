@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using System.Diagnostics;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core;
@@ -17,7 +18,7 @@ internal sealed class AboutForm : Form
         _scale = Theme.DetectDpiScale();
         _theme = Theme.Create(host.Settings.Theme, _scale);
 
-        Text = "关于 PerfScope";
+        Text = Loc.T("关于 PerfScope");
         AutoScaleMode = AutoScaleMode.None;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
@@ -59,12 +60,12 @@ internal sealed class AboutForm : Form
             Dock = DockStyle.Fill,
             ForeColor = _theme.TextSecondary,
             TextAlign = ContentAlignment.TopLeft,
-            Text = "Windows 上真正能 7×24 常驻的 CPU / 内存监控小工具。" + Environment.NewLine + Environment.NewLine +
-                   "• 后台线程 + 原生批量采样（NtQuerySystemInformation），自身开销极低" + Environment.NewLine +
-                   "• 只展示「应用级」占用：按安装目录、版本信息、产品名把进程挂钩到同一个应用" + Environment.NewLine +
-                   "• 零第三方依赖，纯 .NET + WinForms + P/Invoke" + Environment.NewLine +
-                   "• 托盘常驻，窗口隐藏时自动降频采样" + Environment.NewLine + Environment.NewLine +
-                   "数据目录：" + AppPaths.DataDirectory,
+            Text = Loc.T("Windows 上真正能 7×24 常驻的 CPU / 内存监控小工具。") + Environment.NewLine + Environment.NewLine +
+                   Loc.T("• 后台线程 + 原生批量采样（NtQuerySystemInformation），自身开销极低") + Environment.NewLine +
+                   Loc.T("• 只展示「应用级」占用：按安装目录、版本信息、产品名把进程挂钩到同一个应用") + Environment.NewLine +
+                   Loc.T("• 零第三方依赖，纯 .NET + WinForms + P/Invoke") + Environment.NewLine +
+                   Loc.T("• 托盘常驻，窗口隐藏时自动降频采样") + Environment.NewLine + Environment.NewLine +
+                   Loc.T("数据目录：") + AppPaths.DataDirectory,
         };
         layout.Controls.Add(description, 0, 1);
 
@@ -75,8 +76,8 @@ internal sealed class AboutForm : Form
             AutoSize = true,
             BackColor = _theme.Background,
         };
-        var closeButton = new Button { Text = "关闭", Width = Scaled(88), Height = Scaled(30), DialogResult = DialogResult.OK };
-        var openDataButton = new Button { Text = "打开数据目录", Width = Scaled(120), Height = Scaled(30) };
+        var closeButton = new Button { Text = Loc.T("关闭"), Width = Scaled(88), Height = Scaled(30), DialogResult = DialogResult.OK };
+        var openDataButton = new Button { Text = Loc.T("打开数据目录"), Width = Scaled(120), Height = Scaled(30) };
         openDataButton.Click += OnOpenDataDirectory;
         buttons.Controls.Add(closeButton);
         buttons.Controls.Add(openDataButton);
@@ -100,7 +101,7 @@ internal sealed class AboutForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "打开数据目录失败：" + ex.Message, "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, Loc.T("打开数据目录失败：") + ex.Message, "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

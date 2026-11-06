@@ -1,3 +1,4 @@
+using PerfScope.App.Localization;
 using PerfScope.App.Infrastructure;
 using PerfScope.Core.Settings;
 
@@ -6,8 +7,8 @@ namespace PerfScope.App.Forms;
 /// <summary>单条自定义归并规则的编辑对话框（匹配方式 / 模式 / 动作 / 目标 / 启用）。</summary>
 internal sealed class RuleEditDialog : Form
 {
-    private static readonly string[] MatchTexts = { "按映像名（exe 文件名）", "按可执行文件路径包含", "按产品名（版本信息）" };
-    private static readonly string[] ActionTexts = { "合并到指定应用", "只改显示名", "排除（不显示、不统计）" };
+    private static readonly string[] MatchTexts = { Loc.T("按映像名（exe 文件名）"), Loc.T("按可执行文件路径包含"), Loc.T("按产品名（版本信息）") };
+    private static readonly string[] ActionTexts = { Loc.T("合并到指定应用"), Loc.T("只改显示名"), Loc.T("排除（不显示、不统计）") };
 
     private readonly Theme _theme;
     private readonly ComboBox _matchBox;
@@ -56,7 +57,7 @@ internal sealed class RuleEditDialog : Form
 
         _enabledBox = new CheckBox
         {
-            Text = "启用这条规则",
+            Text = Loc.T("启用这条规则"),
             Checked = Rule.Enabled,
             AutoSize = true,
             Dock = DockStyle.Fill,
@@ -94,11 +95,11 @@ internal sealed class RuleEditDialog : Form
             TextAlign = ContentAlignment.TopLeft,
         };
 
-        AddRow(layout, 0, "启用", _enabledBox);
-        AddRow(layout, 1, "匹配方式", _matchBox);
-        AddRow(layout, 2, "匹配模式", _patternBox);
-        AddRow(layout, 3, "命中动作", _actionBox);
-        AddRow(layout, 4, "目标名称", _targetBox);
+        AddRow(layout, 0, Loc.T("启用"), _enabledBox);
+        AddRow(layout, 1, Loc.T("匹配方式"), _matchBox);
+        AddRow(layout, 2, Loc.T("匹配模式"), _patternBox);
+        AddRow(layout, 3, Loc.T("命中动作"), _actionBox);
+        AddRow(layout, 4, Loc.T("目标名称"), _targetBox);
         layout.Controls.Add(_hintLabel, 1, 5);
         layout.SetColumnSpan(_hintLabel, 2);
 
@@ -110,8 +111,8 @@ internal sealed class RuleEditDialog : Form
             Padding = new Padding(Dp(16), Dp(6), Dp(16), Dp(6)),
             BackColor = theme.Background,
         };
-        var cancelButton = new Button { Text = "取消", Width = Dp(88), Height = Dp(30), DialogResult = DialogResult.Cancel };
-        var okButton = new Button { Text = "确定", Width = Dp(88), Height = Dp(30) };
+        var cancelButton = new Button { Text = Loc.T("取消"), Width = Dp(88), Height = Dp(30), DialogResult = DialogResult.Cancel };
+        var okButton = new Button { Text = Loc.T("确定"), Width = Dp(88), Height = Dp(30) };
         okButton.Click += OnConfirm;
         buttons.Controls.Add(cancelButton);
         buttons.Controls.Add(okButton);
@@ -155,8 +156,8 @@ internal sealed class RuleEditDialog : Form
         _hintLabel.Text = _matchBox.SelectedIndex switch
         {
             1 => "示例：\\Program Files\\MyApp\\ —— 只要可执行文件路径包含该子串就命中。",
-            2 => "示例：My Company MyApp —— 与版本信息 ProductName 比较（不区分大小写）。",
-            _ => "示例：myapp.exe —— 只与该进程的映像文件名比较（不区分大小写）。",
+            2 => Loc.T("示例：My Company MyApp —— 与版本信息 ProductName 比较（不区分大小写）。"),
+            _ => Loc.T("示例：myapp.exe —— 只与该进程的映像文件名比较（不区分大小写）。"),
         };
     }
 
@@ -172,7 +173,7 @@ internal sealed class RuleEditDialog : Form
         string pattern = _patternBox.Text.Trim();
         if (pattern.Length == 0)
         {
-            MessageBox.Show(this, "请填写匹配模式。", "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, Loc.T("请填写匹配模式。"), "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _patternBox.Focus();
             return;
         }
@@ -181,7 +182,7 @@ internal sealed class RuleEditDialog : Form
         string target = _targetBox.Text.Trim();
         if (action != AppRuleAction.Exclude && target.Length == 0)
         {
-            MessageBox.Show(this, "该动作需要填写目标名称。", "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, Loc.T("该动作需要填写目标名称。"), "PerfScope", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _targetBox.Focus();
             return;
         }

@@ -1,0 +1,110 @@
+name: Bug report
+description: Report a reproducible problem with PerfScope
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem!
+
+        Please search [existing issues](https://github.com/Dynesshely/PerfScope/issues) first, and remove
+        personal information (user names, machine names, private paths) from logs, screenshots and text.
+        Security vulnerabilities must **not** be reported here — see
+        [SECURITY.md](https://github.com/Dynesshely/PerfScope/blob/main/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: PerfScope version
+      description: Shown in Settings -> About, or in the installer / zip file name.
+      placeholder: "0.1.2"
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and build
+      description: Run `winver` and paste the version and build number.
+      placeholder: "Windows 11 23H2 (build 22631.4460)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package are you using?
+      options:
+        - Installer (PerfScope-Setup-x.y.z-win-x64.exe)
+        - Portable zip (PerfScope-x.y.z-win-x64-portable.zip)
+        - Built from source (dotnet run / dotnet build)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Application list / grouping
+        - Memory distribution (treemap)
+        - CPU distribution (treemap)
+        - Header cards / trend curves
+        - History / insights / report
+        - Settings / theme
+        - Tray / start with Windows / alerts
+        - Agent prompt
+        - Installer / portable package
+        - PerfScope's own CPU or memory usage
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smaller the reproduction, the faster it can be fixed.
+      placeholder: |
+        1. Open PerfScope
+        2. Switch to the CPU distribution view
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Screenshots or short screen recordings are very helpful — drag them into this box.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and diagnostics (optional)
+      description: |
+        Tail of `%LOCALAPPDATA%\PerfScope\logs\perfscope.log`, and `settings.json` if the problem is
+        configuration related. Please redact user names and private paths.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I removed personal information from logs, screenshots and text.
+          required: true
+        - label: This is not a security vulnerability (those go through SECURITY.md).
+          required: true

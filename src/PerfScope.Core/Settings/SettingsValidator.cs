@@ -167,15 +167,15 @@ public static class SettingsValidator
         settings.AlertCooldownSeconds = ClampInt(settings.AlertCooldownSeconds, AlertCooldownSecondsMin, AlertCooldownSecondsMax, "告警冷却时间", fixes);
 
         // ===== 智能分析 =====
-    settings.InsightAppCpuPercent = ClampInt(settings.InsightAppCpuPercent, InsightCpuPercentMin, InsightCpuPercentMax, "CPU 片段阈值", fixes);
-    settings.InsightAppCpuSeconds = ClampInt(settings.InsightAppCpuSeconds, InsightSecondsMin, InsightSecondsMax, "CPU 片段最短秒数", fixes);
-    settings.InsightMemoryGrowthMbPerMinute = ClampInt(settings.InsightMemoryGrowthMbPerMinute, InsightGrowthMin, InsightGrowthMax, "内存增长阈值", fixes);
-    settings.InsightSystemCpuPercent = ClampInt(settings.InsightSystemCpuPercent, InsightCpuPercentMin, InsightCpuPercentMax, "整机高负载阈值", fixes);
-    settings.InsightSystemCpuSeconds = ClampInt(settings.InsightSystemCpuSeconds, InsightSecondsMin, InsightSecondsMax, "系统片段最短秒数", fixes);
-    settings.InsightLowMemoryPercent = ClampInt(settings.InsightLowMemoryPercent, 1, 50, "内存压力阈值", fixes);
-    settings.InsightDigestMinutes = ClampInt(settings.InsightDigestMinutes, InsightDigestMin, InsightDigestMax, "摘要窗口分钟数", fixes);
+        settings.InsightAppCpuPercent = ClampInt(settings.InsightAppCpuPercent, InsightCpuPercentMin, InsightCpuPercentMax, "CPU 片段阈值", fixes);
+        settings.InsightAppCpuSeconds = ClampInt(settings.InsightAppCpuSeconds, InsightSecondsMin, InsightSecondsMax, "CPU 片段最短秒数", fixes);
+        settings.InsightMemoryGrowthMbPerMinute = ClampInt(settings.InsightMemoryGrowthMbPerMinute, InsightGrowthMin, InsightGrowthMax, "内存增长阈值", fixes);
+        settings.InsightSystemCpuPercent = ClampInt(settings.InsightSystemCpuPercent, InsightCpuPercentMin, InsightCpuPercentMax, "整机高负载阈值", fixes);
+        settings.InsightSystemCpuSeconds = ClampInt(settings.InsightSystemCpuSeconds, InsightSecondsMin, InsightSecondsMax, "系统片段最短秒数", fixes);
+        settings.InsightLowMemoryPercent = ClampInt(settings.InsightLowMemoryPercent, 1, 50, "内存压力阈值", fixes);
+        settings.InsightDigestMinutes = ClampInt(settings.InsightDigestMinutes, InsightDigestMin, InsightDigestMax, "摘要窗口分钟数", fixes);
 
-    // ===== 诊断 =====
+        // ===== 诊断 =====
         if (!Enum.IsDefined(settings.LogLevel))
         {
             fixes.Add($"日志级别 {settings.LogLevel} 非法，已回退为 {LogLevel.Warn}");
