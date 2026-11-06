@@ -70,6 +70,7 @@ internal sealed class SettingsForm : Form
 
     private readonly ComboBox _logLevel;
     private readonly NumericUpDown _logMaxKb;
+    private readonly Button _exportDiagnosticsButton;
     private readonly CheckBox _updateCheck;
 
     private bool _disposed;
@@ -142,6 +143,8 @@ internal sealed class SettingsForm : Form
         _logLevel = Combo(LogLevelTexts, (int)_working.LogLevel);
         _logMaxKb = Num(64, 10240, 64, _working.LogMaxKilobytes);
         _updateCheck = Check(Loc.T("自动检查更新（唯一的网络访问）"), _working.UpdateCheckEnabled);
+        _exportDiagnosticsButton = new Button { Text = Loc.T("导出诊断包…"), Width = Scaled(160), Height = Scaled(28) };
+        _exportDiagnosticsButton.Click += (_, _) => ExportDiagnostics();
 
         // ---------- 布局 ----------
         var tabs = new ThemedTabControl(_theme)
@@ -238,6 +241,7 @@ internal sealed class SettingsForm : Form
         AddSectionTitle(diagnostics, Loc.T("数据目录"));
         var openFolder = new Button { Text = Loc.T("打开数据目录"), Width = Scaled(140), Height = Scaled(30) };
         openFolder.Click += OnOpenDataDirectory;
+        AddRow(diagnostics, Loc.T("导出诊断包…"), _exportDiagnosticsButton);
         AddRow(diagnostics, Loc.T("数据位置"), openFolder);
         var pathHint = new Label
         {
@@ -305,6 +309,29 @@ internal sealed class SettingsForm : Form
         2 => "en",
         _ => "system",
     };
+
+    /// <summary>导出脱敏诊断包并打开所在目录。</summary>
+    private void ExportDiagnostics()
+    {
+        try
+        {
+            string? path = PerfScope.Core.Diagnostics.DiagnosticBundle.Create(PerfScope.Core.AppPaths.DataDirectory);
+            if (string.IsNullOrEmpty(path))
+            {
+                MessageBox.Show(this, Loc.T("导出失败，详情见日志。"), Loc.T("导出诊断包…"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select,\"" + path + "\"")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, Loc.T("导出诊断包…"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
 
     private NumericUpDown Num(decimal minimum, decimal maximum, decimal step, decimal value) => new ThemedNumericUpDown(_theme)
     {

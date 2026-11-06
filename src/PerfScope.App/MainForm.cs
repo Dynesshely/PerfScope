@@ -30,6 +30,8 @@ internal sealed class MainForm : Form
     private readonly ToolStripStatusLabel _frameLabel;
     private readonly ToolStripStatusLabel _selfLabel;
     private readonly ToolStripStatusLabel _processLabel;
+    private readonly ToolStripStatusLabel _privilegeLabel;
+    private bool _privilegeHintDismissed;
     private readonly System.Windows.Forms.Timer _uiTimer;
     private readonly TrendRing _cpuRing = new(120);
     private readonly TrendRing _memoryRing = new(120);
@@ -99,7 +101,7 @@ internal sealed class MainForm : Form
         _split.Panel2.Controls.Add(_distribution);
 
         _toolbar = BuildToolbar(out _pauseButton);
-        _status = BuildStatusBar(out _intervalLabel, out _frameLabel, out _selfLabel, out _processLabel);
+        _status = BuildStatusBar(out _intervalLabel, out _frameLabel, out _selfLabel, out _processLabel, out _privilegeLabel);
         _status.Tag = "v" + AppPaths.Version;
 
         _layout = new TableLayoutPanel
@@ -427,7 +429,8 @@ internal sealed class MainForm : Form
         out ToolStripStatusLabel intervalLabel,
         out ToolStripStatusLabel frameLabel,
         out ToolStripStatusLabel selfLabel,
-        out ToolStripStatusLabel processLabel)
+        out ToolStripStatusLabel processLabel,
+        out ToolStripStatusLabel privilegeLabel)
     {
         var strip = new StatusStrip
         {
@@ -453,8 +456,19 @@ internal sealed class MainForm : Form
             Margin = new Padding(Scaled(6), 0, Scaled(6), 0),
         };
 
+        privilegeLabel = new ToolStripStatusLabel(Loc.T("⚠ 权限受限：部分进程不可见"))
+        {
+            IsLink = true,
+            Visible = false,
+            ForeColor = _theme.Warning,
+            LinkColor = _theme.Warning,
+        };
+        privilegeLabel.Click += (_, _) => ShowPrivilegeHint();
+
         strip.Items.AddRange(new ToolStripItem[]
         {
+            privilegeLabel,
+            Divider(),
             intervalLabel,
             Divider(),
             frameLabel,
@@ -675,6 +689,94 @@ internal sealed class MainForm : Form
         _processLabel.Text = Loc.T("{0} 个进程 · {1} 个应用", frame.ProcessCount, frame.Apps.Length);
         _selfLabel.Text = Loc.T("自身 {0} / {1}", FormatUtil.Percent(frame.SelfCpuPercent), FormatUtil.Bytes(frame.SelfWorkingSetBytes));
         _selfLabel.Visible = settings.ShowSelfUsage;
+        UpdatePrivilegeHint(frame);
+    }
+
+    /// <summary>
+    /// 非管理员运行时，一部分进程的路径读不到——这时统计会偏小。
+    /// 用「只能按映像名归并」的进程占比作为信号，在状态栏给出可点击的提示。
+    /// </summary>
+    private void UpdatePrivilegeHint(SnapshotFrame frame)
+    {
+        if (_privilegeHintDismissed || _privilegeLabel is null)
+        {
+            return;
+        }
+
+        bool elevated;
+        try
+        {
+            elevated = Environment.IsPrivilegedProcess;
+        }
+        catch
+        {
+            elevated = false;
+        }
+
+        if (elevated)
+        {
+            _privilegeLabel.Visible = false;
+            return;
+        }
+
+        int total = 0;
+        int weak = 0;
+        foreach (var app in frame.Apps)
+        {
+            total += app.ProcessCount;
+            if (app.Reason.Contains("仅能按映像名归并", StringComparison.Ordinal))
+            {
+                weak += app.ProcessCount;
+            }
+        }
+
+        _privilegeLabel.Visible = total > 0 && weak * 2 >= total;
+    }
+
+    /// <summary>说明为什么数值不全，并可一键以管理员身份重启。</summary>
+    private void ShowPrivilegeHint()
+    {
+        var answer = MessageBox.Show(
+            this,
+            Loc.T("当前以普通权限运行，部分系统进程的详细信息读不到，统计结果可能偏小。") +
+            Environment.NewLine + Environment.NewLine +
+            Loc.T("是否以管理员身份重新启动 PerfScope？"),
+            Loc.T("权限受限"),
+            MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Information);
+
+        if (answer == DialogResult.Cancel)
+        {
+            _privilegeHintDismissed = true;
+            _privilegeLabel.Visible = false;
+            return;
+        }
+
+        if (answer != DialogResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            string? exe = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exe))
+            {
+                return;
+            }
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                Arguments = "--data-dir \"" + PerfScope.Core.AppPaths.DataDirectory + "\"",
+            });
+            Application.Exit();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, Loc.T("权限受限"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private void UpdateStatusVisibility(AppSettings settings)
