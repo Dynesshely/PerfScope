@@ -604,4 +604,34 @@
   <data name="重启以应用语言更改" xml:space="preserve">
     <value>Restart to apply the language change</value>
   </data>
+  <data name="欢迎使用 PerfScope" xml:space="preserve">
+    <value>Welcome to PerfScope</value>
+  </data>
+  <data name="一个托盘常驻的「应用级」CPU / 内存监控工具。三件事看懂它：" xml:space="preserve">
+    <value>A tray-resident, application-level CPU and memory monitor. Three things to know:</value>
+  </data>
+  <data name="每一行、每一个方块都是一个「应用」，而不是单个进程——浏览器、Electron 应用的一堆子进程会被合并到同一个应用里。" xml:space="preserve">
+    <value>Every row and every block is an application, not a single process — the many child processes of a browser or an Electron app are merged into one application.</value>
+  </data>
+  <data name="顶部指标卡悬停能看到坐标轴与该时刻的具体数值；列表里悬停进程行能看到完整可执行文件路径。" xml:space="preserve">
+    <value>Hover the header cards to see axes and the exact value at that moment; hover a process row in the list to see its full executable path.</value>
+  </data>
+  <data name="历史会自动累积：工具栏「分析」生成日报，「接入 Agent」把结论连同数据路径一起交给你的 AI。" xml:space="preserve">
+    <value>History builds up automatically: Analysis produces a daily report, and Connect an agent hands both the conclusions and the data paths to your AI.</value>
+  </data>
+  <data name="这些提示可以在「设置 → 界面」里重新查看。" xml:space="preserve">
+    <value>You can revisit these tips in Settings → Interface.</value>
+  </data>
+  <data name="开始使用" xml:space="preserve">
+    <value>Get started</value>
+  </data>
+  <data name="新手引导" xml:space="preserve">
+    <value>Onboarding</value>
+  </data>
+  <data name="重新查看新手引导" xml:space="preserve">
+    <value>Show onboarding again</value>
+  </data>
+  <data name="显示新手引导失败" xml:space="preserve">
+    <value>Failed to show the onboarding tips</value>
+  </data>
 </root>

@@ -205,6 +205,9 @@ public sealed class AppSettings
     /// <summary>同一告警的最小间隔（秒），防止刷屏。范围 30~3600，默认 300。</summary>
     public int AlertCooldownSeconds { get; set; } = 300;
 
+    /// <summary>首次启动引导是否已经展示过。</summary>
+    public bool FirstRunTipsShown { get; set; }
+
     // ================= 自动更新 =================
 
     /// <summary>启动后自动检查更新（唯一的网络访问，可在设置里关闭）。</summary>
@@ -310,6 +313,7 @@ public sealed class AppSettings
         AlertCpuPercent = source.AlertCpuPercent;
         AlertMemoryPercent = source.AlertMemoryPercent;
         AlertCooldownSeconds = source.AlertCooldownSeconds;
+        FirstRunTipsShown = source.FirstRunTipsShown;
         UpdateCheckEnabled = source.UpdateCheckEnabled;
         Language = source.Language;
         InsightEnabled = source.InsightEnabled;

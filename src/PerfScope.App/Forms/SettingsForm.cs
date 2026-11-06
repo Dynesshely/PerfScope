@@ -209,6 +209,13 @@ internal sealed class SettingsForm : Form
         AddRow(ui, Loc.T("显示系统模块组"), _showSystemGroups);
         AddRow(ui, Loc.T("主题"), _themeBox);
         AddRow(ui, Loc.T("语言"), _languageBox);
+        var tipsButton = new Button { Text = Loc.T("重新查看新手引导"), Width = Scaled(180), Height = Scaled(28) };
+        tipsButton.Click += (_, _) =>
+        {
+            using var tips = new FirstRunTipsForm(_working);
+            tips.ShowDialog(this);
+        };
+        AddRow(ui, Loc.T("新手引导"), tipsButton);
         AddSectionTitle(ui, Loc.T("启动与关闭"));
         AddRow(ui, Loc.T("启动最小化"), _startMinimized);
         AddRow(ui, Loc.T("开机自动启动"), _runAtStartup);

@@ -26,6 +26,7 @@ internal static class Program
         Infrastructure.UiDebug.SettingsTabIndex = ParseIntArgument(args, "--settings-tab", -1);
         Infrastructure.UiDebug.ExpandFirstGroup = HasFlag(args, "--expand-first");
         Infrastructure.UiDebug.ForceListTooltip = HasFlag(args, "--list-tip-demo");
+        Infrastructure.UiDebug.ShowFirstRunTips = HasFlag(args, "--tips-demo");
 
         ApplicationConfiguration.Initialize();
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);

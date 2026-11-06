@@ -22,6 +22,9 @@ internal static class UiDebug
     /// <summary>启动后自动展开第一个应用分组（仅截图 / 自动化验证用）。</summary>
     public static bool ExpandFirstGroup { get; set; }
 
+    /// <summary>强制显示首次启动引导（仅截图 / 自动化验证用）。</summary>
+    public static bool ShowFirstRunTips { get; set; }
+
     /// <summary>强制显示列表子项的悬停提示（仅截图 / 自动化验证用）。</summary>
     public static bool ForceListTooltip { get; set; }
 }

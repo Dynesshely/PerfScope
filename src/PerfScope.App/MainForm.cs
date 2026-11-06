@@ -162,6 +162,12 @@ internal sealed class MainForm : Form
             BeginInvoke(new Action(OpenAgentHandoff));
         }
 
+        if (UiDebug.ShowFirstRunTips || (!_host.IsDemo && !_host.Settings.FirstRunTipsShown))
+        {
+            // 首次启动讲三件事；之后可在「设置 → 界面」重新打开
+            BeginInvoke(new Action(() => ShowFirstRunTips(markShown: !UiDebug.ShowFirstRunTips)));
+        }
+
         if (UiDebug.OpenSettingsOnStart)
         {
             // 仅用于截图 / 自动化验证：启动后自动打开设置窗口
@@ -272,6 +278,29 @@ internal sealed class MainForm : Form
     {
         using var form = new SettingsForm(_host);
         form.ShowDialog(this);
+    }
+
+    /// <summary>显示首次启动引导。</summary>
+    private void ShowFirstRunTips(bool markShown = false)
+    {
+        try
+        {
+            using var form = new FirstRunTipsForm(_host.Settings);
+            form.ShowDialog(this);
+
+            if (!markShown)
+            {
+                return;
+            }
+
+            var next = _host.Settings.Clone();
+            next.FirstRunTipsShown = true;
+            _host.ApplySettings(next);
+        }
+        catch (Exception ex)
+        {
+            _host.SafeLog(LogLevel.Warn, "显示新手引导失败", ex);
+        }
     }
 
     /// <summary>打开「接入 Agent」窗口（复制可交给 AI 的 Prompt）。</summary>
