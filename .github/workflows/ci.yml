@@ -46,6 +46,12 @@ jobs:
           dotnet build -c Release --nologo
           if ($LASTEXITCODE -ne 0) { throw "编译失败（exit $LASTEXITCODE）" }
 
+      - name: Performance gate
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          ./scripts/check-perf.ps1 -Frames 6
+
       - name: Run tests
         shell: pwsh
         run: |

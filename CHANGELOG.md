@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Armoury Crate, AMD/ATI services, Realtek, DriverStore helpers, …) are grouped into one readable row
   instead of showing up as unrecognised processes.
 - Application grouping now recognises **release channels**, so e.g. Microsoft Edge stable and Edge Beta
+- **Automatic updates**: PerfScope checks GitHub Releases once at start-up (can be disabled in
+  `Settings → Diagnostics`) and shows a tray balloon when a newer version is available.
+  The portable archive is downloaded with SHA-256 verification against `SHA256SUMS.txt`.
+- **Redacted diagnostic bundle**: `Settings → Diagnostics → Export diagnostic bundle` packages the logs,
+  a redacted settings snapshot, recent insights and environment details into one zip
+  (machine name, user name and user profile paths are replaced with placeholders).
+- **Limited-permission hint**: when PerfScope runs without administrator rights and many processes cannot
+  be inspected, a clickable hint appears in the status bar offering a restart with elevation.
 - **Localization (i18n)**: UI strings are now resource-based (`src/PerfScope.App/Localization`),
   with English translations in `Strings.en.resx`; the language can be switched in Settings
   (Follow system / 中文 / English) and is stored in `settings.json`.

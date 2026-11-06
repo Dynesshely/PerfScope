@@ -580,4 +580,28 @@
   <data name="自动检查更新（唯一的网络访问）" xml:space="preserve">
     <value>Check for updates automatically (the only network access)</value>
   </data>
+  <data name="导出诊断包…" xml:space="preserve">
+    <value>Export diagnostic bundle…</value>
+  </data>
+  <data name="导出失败，详情见日志。" xml:space="preserve">
+    <value>Export failed, see the log.</value>
+  </data>
+  <data name="⚠ 权限受限：部分进程不可见" xml:space="preserve">
+    <value>⚠ Limited permissions: some processes are hidden</value>
+  </data>
+  <data name="权限受限" xml:space="preserve">
+    <value>Limited permissions</value>
+  </data>
+  <data name="当前以普通权限运行，部分系统进程的详细信息读不到，统计结果可能偏小。" xml:space="preserve">
+    <value>PerfScope is running without administrator rights, so details for some system processes cannot be read and the totals may be low.</value>
+  </data>
+  <data name="是否以管理员身份重新启动 PerfScope？" xml:space="preserve">
+    <value>Restart PerfScope as administrator?</value>
+  </data>
+  <data name="更新" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="重启以应用语言更改" xml:space="preserve">
+    <value>Restart to apply the language change</value>
+  </data>
 </root>
