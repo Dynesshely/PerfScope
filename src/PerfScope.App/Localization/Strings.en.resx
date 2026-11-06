@@ -559,4 +559,25 @@
   <data name="{0} 个进程 · {1} 个应用" xml:space="preserve">
     <value>{0} processes · {1} applications</value>
   </data>
+  <data name="检查更新" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="检查更新…" xml:space="preserve">
+    <value>Check for updates…</value>
+  </data>
+  <data name="发现新版本 {0}" xml:space="preserve">
+    <value>Version {0} is available</value>
+  </data>
+  <data name="点击查看发布说明并下载。" xml:space="preserve">
+    <value>Click to open the release notes and download.</value>
+  </data>
+  <data name="已经是最新版本（{0}）。" xml:space="preserve">
+    <value>You are on the latest version ({0}).</value>
+  </data>
+  <data name="检查更新失败，请稍后重试。" xml:space="preserve">
+    <value>Update check failed. Please try again later.</value>
+  </data>
+  <data name="自动检查更新（唯一的网络访问）" xml:space="preserve">
+    <value>Check for updates automatically (the only network access)</value>
+  </data>
 </root>

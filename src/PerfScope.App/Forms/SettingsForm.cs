@@ -70,6 +70,7 @@ internal sealed class SettingsForm : Form
 
     private readonly ComboBox _logLevel;
     private readonly NumericUpDown _logMaxKb;
+    private readonly CheckBox _updateCheck;
 
     private bool _disposed;
 
@@ -140,6 +141,7 @@ internal sealed class SettingsForm : Form
 
         _logLevel = Combo(LogLevelTexts, (int)_working.LogLevel);
         _logMaxKb = Num(64, 10240, 64, _working.LogMaxKilobytes);
+        _updateCheck = Check(Loc.T("自动检查更新（唯一的网络访问）"), _working.UpdateCheckEnabled);
 
         // ---------- 布局 ----------
         var tabs = new ThemedTabControl(_theme)
@@ -222,6 +224,8 @@ internal sealed class SettingsForm : Form
         var diagnosticsPage = new TabPage(Loc.T("诊断")) { BackColor = _theme.Background };
         var diagnostics = CreateContent(diagnosticsPage);
         AddSectionTitle(diagnostics, Loc.T("日志"));
+        AddSectionTitle(diagnostics, Loc.T("更新"));
+        AddRow(diagnostics, Loc.T("自动检查更新（唯一的网络访问）"), _updateCheck);
         AddRow(diagnostics, Loc.T("日志级别（重启后生效）"), _logLevel);
         AddRow(diagnostics, Loc.T("日志大小上限（KB，重启后生效）"), _logMaxKb);
         AddWideControl(diagnostics, new Label
@@ -679,6 +683,7 @@ internal sealed class SettingsForm : Form
 
         _logLevel.SelectedIndex = (int)_working.LogLevel;
         SetNum(_logMaxKb, _working.LogMaxKilobytes);
+        _updateCheck.Checked = _working.UpdateCheckEnabled;
 
         RefreshRuleList(0);
     }
@@ -785,6 +790,7 @@ internal sealed class SettingsForm : Form
 
         _working.LogLevel = (LogLevel)Math.Max(0, _logLevel.SelectedIndex);
         _working.LogMaxKilobytes = (int)_logMaxKb.Value;
+        _working.UpdateCheckEnabled = _updateCheck.Checked;
 
         return true;
     }

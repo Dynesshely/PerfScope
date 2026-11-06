@@ -1,4 +1,6 @@
+using PerfScope.App.Infrastructure.Updates;
 using PerfScope.App.Localization;
+using PerfScope.Core;
 using PerfScope.App.Controls;
 using PerfScope.App.Forms;
 using PerfScope.App.Infrastructure;
@@ -25,6 +27,7 @@ internal sealed class TrayAppContext : ApplicationContext
     private readonly ToolStripMenuItem _showItem;
     private readonly ToolStripMenuItem _pauseItem;
     private readonly ToolStripMenuItem _startupItem;
+    private string? _pendingReleaseUrl;
     private readonly System.Windows.Forms.Timer _alertTimer;
     private readonly System.Windows.Forms.Timer? _selfTestTimer;
     private readonly EventWaitHandle? _activateEvent;
@@ -84,6 +87,9 @@ internal sealed class TrayAppContext : ApplicationContext
             form.ShowDialog(_mainForm);
         };
 
+        var updateItem = new ToolStripMenuItem(Loc.T("检查更新…"));
+        updateItem.Click += async (_, _) => await CheckForUpdatesAsync(silent: false).ConfigureAwait(true);
+
         var exitItem = new ToolStripMenuItem(Loc.T("退出"));
         exitItem.Click += (_, _) => ExitApplication();
 
@@ -107,6 +113,7 @@ internal sealed class TrayAppContext : ApplicationContext
             _startupItem,
             new ToolStripSeparator(),
             aboutItem,
+            updateItem,
             exitItem,
         });
 
@@ -118,7 +125,30 @@ internal sealed class TrayAppContext : ApplicationContext
             Visible = true,
         };
         _tray.DoubleClick += (_, _) => ShowMainWindow();
-        _tray.BalloonTipClicked += (_, _) => ShowMainWindow();
+        _tray.BalloonTipClicked += (_, _) =>
+        {
+            if (!string.IsNullOrEmpty(_pendingReleaseUrl))
+            {
+                OpenUrl(_pendingReleaseUrl!);
+                _pendingReleaseUrl = null;
+                return;
+            }
+
+            ShowMainWindow();
+        };
+
+        if (_host.Settings.UpdateCheckEnabled)
+        {
+            // 延迟几秒，避免和首帧采样、托盘图标初始化抢资源
+            var updateTimer = new System.Windows.Forms.Timer { Interval = 6000 };
+            updateTimer.Tick += async (_, _) =>
+            {
+                updateTimer.Stop();
+                updateTimer.Dispose();
+                await CheckForUpdatesAsync(silent: true).ConfigureAwait(true);
+            };
+            updateTimer.Start();
+        }
 
         _alertTimer = new System.Windows.Forms.Timer { Interval = 1000 };
         _alertTimer.Tick += OnAlertTimerTick;
@@ -234,6 +264,64 @@ internal sealed class TrayAppContext : ApplicationContext
                 Loc.T("内存占用告警"),
                 Loc.T("物理内存 ") + FormatUtil.Percent(frame.SystemMemoryPercent) + Loc.T("，已超过阈值 ") +
                 settings.AlertMemoryPercent.ToString(System.Globalization.CultureInfo.CurrentCulture) + "%。");
+        }
+    }
+
+    /// <summary>检查更新：静默模式下只在新版本可用时气泡提示，手动模式下给出明确结果。</summary>
+    private async Task CheckForUpdatesAsync(bool silent)
+    {
+        try
+        {
+            var service = new UpdateService(AppPaths.Version);
+            var result = await service.CheckAsync(CancellationToken.None).ConfigureAwait(true);
+
+            if (!result.Succeeded)
+            {
+                if (!silent)
+                {
+                    MessageBox.Show(_mainForm, Loc.T("检查更新失败，请稍后重试。"), Loc.T("检查更新"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+                return;
+            }
+
+            if (!result.HasUpdate)
+            {
+                if (!silent)
+                {
+                    MessageBox.Show(_mainForm, Loc.T("已经是最新版本（{0}）。", result.CurrentVersion), Loc.T("检查更新"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+
+                return;
+            }
+
+            _pendingReleaseUrl = result.Release?.ReleaseUrl;
+            ShowBalloon(Loc.T("发现新版本 {0}", result.LatestVersion ?? "?"), Loc.T("点击查看发布说明并下载。"));
+
+            if (!silent && !string.IsNullOrEmpty(_pendingReleaseUrl))
+            {
+                OpenUrl(_pendingReleaseUrl!);
+                _pendingReleaseUrl = null;
+            }
+        }
+        catch
+        {
+            if (!silent)
+            {
+                MessageBox.Show(_mainForm, Loc.T("检查更新失败，请稍后重试。"), Loc.T("检查更新"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+    }
+
+    private static void OpenUrl(string url)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch
+        {
+            // 打不开浏览器就算了，用户还能自己复制链接
         }
     }
 
