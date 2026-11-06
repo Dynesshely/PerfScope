@@ -634,4 +634,16 @@
   <data name="显示新手引导失败" xml:space="preserve">
     <value>Failed to show the onboarding tips</value>
   </data>
+  <data name="应用列表" xml:space="preserve">
+    <value>Application list</value>
+  </data>
+  <data name="按 CPU 排序的应用列表：方向键选择，回车或空格展开/折叠，F5 立即刷新。" xml:space="preserve">
+    <value>Application list sorted by CPU: arrow keys to select, Enter or Space to expand, F5 to refresh.</value>
+  </data>
+  <data name="分布视图" xml:space="preserve">
+    <value>Distribution view</value>
+  </data>
+  <data name="矩形树图：面积代表占用大小，悬停可查看应用详情。" xml:space="preserve">
+    <value>Treemap: area represents usage, hover for application details.</value>
+  </data>
 </root>

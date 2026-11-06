@@ -51,6 +51,9 @@ internal sealed class AppTreemapControl : Control
         _theme = theme;
         _metric = metric;
         _icons = icons;
+        AccessibleName = Loc.T("分布视图");
+        AccessibleRole = AccessibleRole.Chart;
+        AccessibleDescription = Loc.T("矩形树图：面积代表占用大小，悬停可查看应用详情。");
         SetStyle(
             ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
             ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,

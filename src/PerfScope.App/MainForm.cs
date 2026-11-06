@@ -260,6 +260,39 @@ internal sealed class MainForm : Form
         RefreshView();
     }
 
+    /// <summary>
+    /// 全局快捷键：F5 立即刷新、Ctrl+, 设置、Ctrl+H 历史、Ctrl+Shift+A 接入 Agent、
+    /// Ctrl+Shift+D 显示/隐藏分布视图。键盘用户不必再逐个找按钮。
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        switch (keyData)
+        {
+            case Keys.F5:
+                if (_host.IsPaused)
+                {
+                    _host.SetPaused(false);
+                }
+
+                ForceRefresh();
+                return true;
+            case Keys.Control | Keys.Oemcomma:
+                OpenSettings();
+                return true;
+            case Keys.Control | Keys.H:
+                OpenHistory();
+                return true;
+            case Keys.Control | Keys.Shift | Keys.A:
+                OpenAgentHandoff();
+                return true;
+            case Keys.Control | Keys.Shift | Keys.D:
+                _treemapButton.PerformClick();
+                return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
     /// <summary>暂停 / 继续监控（供托盘菜单与工具条共用）。</summary>
     public void TogglePause()
     {
