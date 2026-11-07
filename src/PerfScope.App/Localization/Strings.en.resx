@@ -688,4 +688,13 @@
   <data name="{0} 当前占用 {1}，已超过阈值 {2}%。" xml:space="preserve">
     <value>{0} is using {1}, above the {2}%% threshold.</value>
   </data>
+  <data name="周报" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="生成最近 7 天与上周的对比周报并打开目录" xml:space="preserve">
+    <value>Generate this week versus last week and open the folder</value>
+  </data>
+  <data name="打开周报失败" xml:space="preserve">
+    <value>Failed to open the weekly report</value>
+  </data>
 </root>

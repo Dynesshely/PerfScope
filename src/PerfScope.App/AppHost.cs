@@ -318,6 +318,23 @@ internal sealed class AppHost : IDisposable
         }
     }
 
+    /// <summary>生成最近 7 天 vs 上一个 7 天的周报（Markdown + JSON），返回 markdown 路径。</summary>
+    public string? WriteWeeklyReport()
+    {
+        try
+        {
+            var report = WeeklyReportBuilder.Build(DateOnly.FromDateTime(DateTime.Now), History);
+            var (markdownPath, jsonPath) = WeeklyReportBuilder.Write(report, AppPaths.DataDirectory);
+            SafeLog(LogLevel.Info, "周报已更新：" + markdownPath + " / " + jsonPath);
+            return markdownPath;
+        }
+        catch (Exception ex)
+        {
+            SafeLog(LogLevel.Warn, "生成周报失败", ex);
+            return null;
+        }
+    }
+
     /// <summary>
     /// 生成「接入 Agent」用的 Prompt：刷新今天的报告后，把真实路径、数据口径与已算好的结论一并写进去。
     /// </summary>

@@ -336,6 +336,24 @@ internal sealed class MainForm : Form
         }
     }
 
+    /// <summary>生成周报并打开 analysis 目录。</summary>
+    private void OpenWeeklyReport()
+    {
+        try
+        {
+            _host.WriteWeeklyReport();
+            var directory = _host.AnalysisDirectory;
+            if (Directory.Exists(directory))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(directory) { UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            _host.SafeLog(LogLevel.Warn, "打开周报失败", ex);
+        }
+    }
+
     /// <summary>打开「接入 Agent」窗口（复制可交给 AI 的 Prompt）。</summary>
     private void OpenAgentHandoff()
     {
@@ -442,6 +460,14 @@ internal sealed class MainForm : Form
         };
         analysisButton.Click += (_, _) => OpenAnalysis();
         toolbar.Items.Add(analysisButton);
+
+        var weeklyButton = new ToolStripButton(Loc.T("周报"))
+        {
+            DisplayStyle = ToolStripItemDisplayStyle.Text,
+            ToolTipText = Loc.T("生成最近 7 天与上周的对比周报并打开目录"),
+        };
+        weeklyButton.Click += (_, _) => OpenWeeklyReport();
+        toolbar.Items.Add(weeklyButton);
 
         var agentButton = new ToolStripButton(Loc.T("接入 Agent"))
         {

@@ -47,6 +47,11 @@ internal static class Program
             return RunAgentPrompt(options);
         }
 
+        if (options.Weekly)
+        {
+            return RunWeekly(options);
+        }
+
         if (options.Report)
         {
             return RunReport(options);
@@ -215,6 +220,23 @@ internal static class Program
             report.Findings);
 
         Console.WriteLine(AgentPromptBuilder.Build(context));
+        return 0;
+    }
+
+    /// <summary>生成最近 7 天 vs 上周的周报。</summary>
+    private static int RunWeekly(CliOptions options)
+    {
+        var dataDir = options.DataDirectory ?? AppPaths.DataDirectory;
+        var settings = new SettingsStore(NullLog.Instance, Path.Combine(dataDir, "settings.json")).Load();
+        using var history = new HistoryStore(settings, NullLog.Instance, Path.Combine(dataDir, "history"));
+
+        var report = WeeklyReportBuilder.Build(DateOnly.FromDateTime(DateTime.Now), history);
+        var (markdownPath, jsonPath) = WeeklyReportBuilder.Write(report, dataDir);
+        Console.WriteLine("已生成周报：");
+        Console.WriteLine("  Markdown : " + markdownPath);
+        Console.WriteLine("  JSON     : " + jsonPath);
+        Console.WriteLine();
+        Console.WriteLine(WeeklyReportBuilder.ToMarkdown(report));
         return 0;
     }
 
@@ -412,6 +434,8 @@ internal sealed class CliOptions
 
     public bool AgentPrompt { get; private set; }
 
+    public bool Weekly { get; private set; }
+
     public DateOnly? HistoryDay { get; private set; }
 
     public int BenchmarkRounds { get; private set; } = 10;
@@ -445,6 +469,9 @@ internal sealed class CliOptions
                     break;
                 case "--agent-prompt":
                     options.AgentPrompt = true;
+                    break;
+                case "--weekly":
+                    options.Weekly = true;
                     break;
                 case "--history":
                     options.History = true;
@@ -493,6 +520,7 @@ internal sealed class CliOptions
         Console.WriteLine("  --processes         列出原始采集到的进程（排查归并 / 可见性）");
         Console.WriteLine("  --report            生成当日分析报告（Markdown + JSON），--json 输出 JSON");
         Console.WriteLine("  --agent-prompt      打印可直接交给 AI Agent 的分析 Prompt");
+        Console.WriteLine("  --weekly            生成最近 7 天 vs 上周的周报（Markdown + JSON）");
         Console.WriteLine("  --history           读取 --data-dir 下的历史，打印当日应用用量排行");
         Console.WriteLine("  --day <yyyy-MM-dd>  指定历史日期（默认最近一天）");
     }
