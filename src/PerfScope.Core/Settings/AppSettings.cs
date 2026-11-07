@@ -202,6 +202,9 @@ public sealed class AppSettings
     /// <summary>整机内存告警阈值（百分比）。范围 10~100，默认 90。</summary>
     public int AlertMemoryPercent { get; set; } = 90;
 
+    /// <summary>单个应用的 CPU 告警阈值（整机百分比）。0 表示关闭应用级告警。范围 0~100，默认 60。</summary>
+    public int AlertAppCpuPercent { get; set; } = 60;
+
     /// <summary>同一告警的最小间隔（秒），防止刷屏。范围 30~3600，默认 300。</summary>
     public int AlertCooldownSeconds { get; set; } = 300;
 
@@ -312,6 +315,7 @@ public sealed class AppSettings
         EnableAlerts = source.EnableAlerts;
         AlertCpuPercent = source.AlertCpuPercent;
         AlertMemoryPercent = source.AlertMemoryPercent;
+        AlertAppCpuPercent = source.AlertAppCpuPercent;
         AlertCooldownSeconds = source.AlertCooldownSeconds;
         FirstRunTipsShown = source.FirstRunTipsShown;
         UpdateCheckEnabled = source.UpdateCheckEnabled;

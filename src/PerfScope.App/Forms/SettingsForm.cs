@@ -65,6 +65,7 @@ internal sealed class SettingsForm : Form
 
     private readonly CheckBox _enableAlerts;
     private readonly NumericUpDown _alertCpu;
+    private readonly NumericUpDown _alertAppCpu;
     private readonly NumericUpDown _alertMemory;
     private readonly NumericUpDown _alertCooldown;
 
@@ -137,6 +138,7 @@ internal sealed class SettingsForm : Form
 
         _enableAlerts = Check(Loc.T("启用阈值气泡告警"), _working.EnableAlerts);
         _alertCpu = Num(10, 100, 1, _working.AlertCpuPercent);
+        _alertAppCpu = Num(0, 100, 5, _working.AlertAppCpuPercent);
         _alertMemory = Num(10, 100, 1, _working.AlertMemoryPercent);
         _alertCooldown = Num(30, 3600, 30, _working.AlertCooldownSeconds);
 
@@ -227,6 +229,7 @@ internal sealed class SettingsForm : Form
         AddSectionTitle(alert, Loc.T("阈值气泡告警（托盘气泡）"));
         AddRow(alert, Loc.T("启用告警"), _enableAlerts);
         AddRow(alert, Loc.T("CPU 阈值（%）"), _alertCpu);
+        AddRow(alert, Loc.T("应用 CPU 阈值（%）"), _alertAppCpu);
         AddRow(alert, Loc.T("内存阈值（%）"), _alertMemory);
         AddRow(alert, Loc.T("冷却时间（秒）"), _alertCooldown);
         tabs.TabPages.Add(alertPage);
@@ -712,6 +715,7 @@ internal sealed class SettingsForm : Form
 
         _enableAlerts.Checked = _working.EnableAlerts;
         SetNum(_alertCpu, _working.AlertCpuPercent);
+        SetNum(_alertAppCpu, _working.AlertAppCpuPercent);
         SetNum(_alertMemory, _working.AlertMemoryPercent);
         SetNum(_alertCooldown, _working.AlertCooldownSeconds);
 
@@ -819,6 +823,7 @@ internal sealed class SettingsForm : Form
 
         _working.EnableAlerts = _enableAlerts.Checked;
         _working.AlertCpuPercent = (int)_alertCpu.Value;
+        _working.AlertAppCpuPercent = (int)_alertAppCpu.Value;
         _working.AlertMemoryPercent = (int)_alertMemory.Value;
         _working.AlertCooldownSeconds = (int)_alertCooldown.Value;
 

@@ -28,6 +28,7 @@ internal sealed class TrayAppContext : ApplicationContext
     private readonly ToolStripMenuItem _pauseItem;
     private readonly ToolStripMenuItem _startupItem;
     private string? _pendingReleaseUrl;
+    private readonly Dictionary<string, DateTime> _appAlertUtc = new(StringComparer.Ordinal);
     private readonly System.Windows.Forms.Timer _alertTimer;
     private readonly System.Windows.Forms.Timer? _selfTestTimer;
     private readonly EventWaitHandle? _activateEvent;
@@ -257,6 +258,8 @@ internal sealed class TrayAppContext : ApplicationContext
                 settings.AlertCpuPercent.ToString(System.Globalization.CultureInfo.CurrentCulture) + "%。");
         }
 
+        CheckAppAlerts(frame, settings, now);
+
         if (frame.SystemMemoryPercent >= settings.AlertMemoryPercent && now - _lastMemoryAlertUtc >= cooldown)
         {
             _lastMemoryAlertUtc = now;
@@ -322,6 +325,43 @@ internal sealed class TrayAppContext : ApplicationContext
         catch
         {
             // 打不开浏览器就算了，用户还能自己复制链接
+        }
+    }
+
+    /// <summary>
+    /// 应用级告警：某个应用持续超过阈值时提醒，避免只盯整机总量而漏掉"单个应用吃满"的情况。
+    /// 同一应用有冷却时间；一次只提示当前最重的一个，避免多应用同时超限时刷屏。
+    /// </summary>
+    private void CheckAppAlerts(SnapshotFrame frame, AppSettings settings, DateTime now)
+    {
+        if (settings.AlertAppCpuPercent <= 0)
+        {
+            return;
+        }
+
+        var cooldown = TimeSpan.FromSeconds(Math.Max(60, settings.AlertCooldownSeconds));
+        foreach (var app in frame.Apps)
+        {
+            if (app.CpuPercent < settings.AlertAppCpuPercent)
+            {
+                continue;
+            }
+
+            if (app.Kind is AppKind.SystemModule or AppKind.SystemProcess)
+            {
+                continue;
+            }
+
+            if (_appAlertUtc.TryGetValue(app.Key, out var last) && now - last < cooldown)
+            {
+                continue;
+            }
+
+            _appAlertUtc[app.Key] = now;
+            ShowBalloon(
+                Loc.T("应用 CPU 告警"),
+                Loc.T("{0} 当前占用 {1}，已超过阈值 {2}%。", app.DisplayName, FormatUtil.Percent(app.CpuPercent), settings.AlertAppCpuPercent));
+            return;
         }
     }
 

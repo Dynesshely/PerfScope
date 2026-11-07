@@ -640,9 +640,6 @@
   <data name="按 CPU 排序的应用列表：方向键选择，回车或空格展开/折叠，F5 立即刷新。" xml:space="preserve">
     <value>Application list sorted by CPU: arrow keys to select, Enter or Space to expand, F5 to refresh.</value>
   </data>
-  <data name="分布视图" xml:space="preserve">
-    <value>Distribution view</value>
-  </data>
   <data name="矩形树图：面积代表占用大小，悬停可查看应用详情。" xml:space="preserve">
     <value>Treemap: area represents usage, hover for application details.</value>
   </data>
@@ -681,5 +678,14 @@
   </data>
   <data name="其他" xml:space="preserve">
     <value>Other</value>
+  </data>
+  <data name="应用 CPU 阈值（%）" xml:space="preserve">
+    <value>Per-app CPU threshold (%)</value>
+  </data>
+  <data name="应用 CPU 告警" xml:space="preserve">
+    <value>Application CPU alert</value>
+  </data>
+  <data name="{0} 当前占用 {1}，已超过阈值 {2}%。" xml:space="preserve">
+    <value>{0} is using {1}, above the {2}%% threshold.</value>
   </data>
 </root>
