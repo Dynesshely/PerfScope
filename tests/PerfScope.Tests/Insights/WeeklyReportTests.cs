@@ -29,7 +29,8 @@ public sealed class WeeklyReportTests
         Assert.Equal(new DateOnly(2026, 10, 23), report.PreviousStart);
         Assert.Equal(new DateOnly(2026, 10, 29), report.PreviousEnd);
 
-        Assert.Equal(15, report.Current.Samples);
+        // Samples 是「有数据的天数 × 每天分辨率」：本周 2 天 × 10 分钟 = 20，上周 1 天 × 4 分钟 = 4
+        Assert.Equal(20, report.Current.Samples);
         Assert.Equal(4, report.Previous.Samples);
         Assert.Single(report.Apps);
         Assert.Equal("Alpha", report.Apps[0].Name);
