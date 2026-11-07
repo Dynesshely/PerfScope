@@ -27,6 +27,7 @@ internal static class Program
         Infrastructure.UiDebug.ExpandFirstGroup = HasFlag(args, "--expand-first");
         Infrastructure.UiDebug.ForceListTooltip = HasFlag(args, "--list-tip-demo");
         Infrastructure.UiDebug.ShowFirstRunTips = HasFlag(args, "--tips-demo");
+        Infrastructure.UiDebug.ForceHighContrast = HasFlag(args, "--force-high-contrast");
 
         ApplicationConfiguration.Initialize();
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);

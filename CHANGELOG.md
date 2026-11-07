@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Armoury Crate, AMD/ATI services, Realtek, DriverStore helpers, …) are grouped into one readable row
   instead of showing up as unrecognised processes.
 - Application grouping now recognises **release channels**, so e.g. Microsoft Edge stable and Edge Beta
+- **High contrast support**: when Windows enables a high contrast theme, the palette switches to system colours.
+- **Accessibility**: the application list exposes a UI Automation row tree (name, CPU, memory, process count,
+  selection state) and the self-drawn surfaces report accessible names, roles and descriptions.
+- **Keyboard shortcuts**: F5 refresh, Ctrl+, settings, Ctrl+H history, Ctrl+Shift+A agent hand-off,
+  Ctrl+Shift+D distribution view.
 - **First-run onboarding**: a one-time three-point introduction (applications vs processes, hover hints,
   history / AI hand-off), reopenable from `Settings → Interface`.
 - **Automatic updates**: PerfScope checks GitHub Releases once at start-up (can be disabled in

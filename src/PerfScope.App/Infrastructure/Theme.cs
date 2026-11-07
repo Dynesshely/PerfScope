@@ -58,6 +58,31 @@ internal sealed class Theme : IDisposable
             GridLine = Color.FromArgb(233, 236, 240);
         }
 
+        // 系统强制对比模式（或截图开关）：自绘配色让位给系统色，
+        // 否则自定义的低对比配色在「高对比度」主题下可能不可读。
+        if (SystemInformation.HighContrast || UiDebug.ForceHighContrast)
+        {
+            IsDark = SystemColors.Window.GetBrightness() < 0.5f;
+            Background = SystemColors.Window;
+            Surface = SystemColors.Window;
+            SurfaceAlt = SystemColors.Control;
+            Border = SystemColors.WindowFrame;
+            HeaderBackground = SystemColors.Control;
+            TextPrimary = SystemColors.WindowText;
+            TextSecondary = SystemColors.WindowText;
+            TextMuted = SystemColors.GrayText;
+            Accent = SystemColors.Highlight;
+            AccentSoft = SystemColors.Control;
+            CpuLine = SystemColors.Highlight;
+            MemoryLine = SystemColors.HotTrack;
+            Danger = SystemColors.WindowText;
+            Warning = SystemColors.WindowText;
+            Success = SystemColors.WindowText;
+            RowHover = SystemColors.Control;
+            RowSelected = SystemColors.Highlight;
+            GridLine = SystemColors.ControlDark;
+        }
+
         float s = scale <= 0 ? 1f : Math.Clamp(scale, 0.75f, 3f);
         UiFont = Own(FontFamilyName, 9f * s, FontStyle.Regular);
         UiBoldFont = Own(FontFamilyName, 9f * s, FontStyle.Bold);

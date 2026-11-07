@@ -202,6 +202,32 @@ Before sending a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md) for the d
 conventions; project-internal rules and the release checklist live in [AGENTS.md](AGENTS.md). Release notes are
 kept in [CHANGELOG.md](CHANGELOG.md), and security issues are handled through [SECURITY.md](SECURITY.md).
 
+
+### Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `F5` | Sample again immediately (resumes monitoring if paused) |
+| `Ctrl + ,` | Open settings |
+| `Ctrl + H` | Open history |
+| `Ctrl + Shift + A` | Copy the agent hand-off prompt |
+| `Ctrl + Shift + D` | Show / hide the distribution view |
+
+### Accessibility
+
+- The application list exposes a UI Automation row tree: each row reports the application name,
+  CPU, memory and process count (or the process name and PID for child rows), plus selection state.
+- Both self-drawn surfaces carry accessible names, roles and descriptions so screen readers
+  announce them instead of nothing.
+- When Windows is in a **high contrast** theme, PerfScope switches its palette to system colours.
+
+### Privacy
+
+PerfScope runs fully offline. The only network request is the optional update check
+(`Settings → Diagnostics`, on by default, can be turned off), which reads the public GitHub release feed
+once per start-up and sends no identifiers. Diagnostics bundles are redacted (machine name, user name and
+profile paths are replaced) and are only created when you explicitly export one.
+
 ## Structure
 
 ~~~text

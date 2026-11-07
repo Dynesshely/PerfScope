@@ -68,3 +68,27 @@
 - Core 与 App 保持零第三方 NuGet 依赖；测试项目用 xunit。
 - 面向用户的字符串、注释、日志、提交信息一律中文。
 - 界面参数改动优先做成 `AppSettings` 字段 + 设置页可调，不要在代码里写死。
+
+### 开发期开关（仅调试/截图，不影响正常使用）
+
+| 参数 | 作用 |
+|---|---|
+| `--lang zh|en` | 强制界面语言（演示/截图模式也会遵循） |
+| `--mock` | 用虚构数据运行（截图、演示，不含真实信息） |
+| `--hover-demo` | 强制显示趋势图悬停坐标轴 |
+| `--expand-first` | 自动展开第一个应用分组 |
+| `--list-tip-demo` | 强制显示进程行悬停提示 |
+| `--tips-demo` | 强制显示新手引导 |
+| `--force-high-contrast` | 强制系统高对比度配色 |
+| `--open-settings` / `--settings-tab N` | 启动即打开设置并定位标签页 |
+| `--open-agent` | 启动即打开「接入 Agent」 |
+
+### 发布前自检
+
+~~~powershell
+.\scripts\run-tests.ps1          # 全部单测
+.\scripts\check-perf.ps1         # 自身开销门禁（CPU <= 2%，内存 <= 200 MB）
+dotnet format whitespace --verify-no-changes
+~~~
+
+诊断包位置：`%LOCALAPPDATA%\PerfScope\diagnostics\perfscope-diag-*.zip`（脱敏后才会导出）。
