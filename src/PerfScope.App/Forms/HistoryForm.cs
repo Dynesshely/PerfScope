@@ -170,7 +170,8 @@ internal sealed class HistoryForm : Form
             _list.Items.Clear();
             foreach (var summary in summaries)
             {
-                var item = new ListViewItem(string.IsNullOrWhiteSpace(summary.DisplayName) ? summary.AppKey : summary.DisplayName);
+                var displayName = string.IsNullOrWhiteSpace(summary.DisplayName) ? summary.AppKey : Loc.T(summary.DisplayName);
+                var item = new ListViewItem(displayName);
                 item.SubItems.Add((summary.CpuPercentSeconds / 100d).ToString("F1", CultureInfo.CurrentCulture));
                 item.SubItems.Add(FormatUtil.Percent(summary.PeakCpuPercent));
                 item.SubItems.Add(FormatUtil.Bytes(summary.PeakWorkingSetBytes));

@@ -80,7 +80,8 @@ internal sealed class AppTreemapControl : Control
     /// <summary>推入一帧的应用数据。</summary>
     public void SetApps(IReadOnlyList<AppSample> apps)
     {
-        _apps = apps as AppSample[] ?? apps.ToArray();
+        var source = apps as AppSample[] ?? apps.ToArray();
+        _apps = Array.ConvertAll(source, app => app with { DisplayName = Loc.T(app.DisplayName) });
         Rebuild();
         Invalidate();
     }

@@ -646,4 +646,40 @@
   <data name="矩形树图：面积代表占用大小，悬停可查看应用详情。" xml:space="preserve">
     <value>Treemap: area represents usage, hover for application details.</value>
   </data>
+  <data name="WSL 子系统" xml:space="preserve">
+    <value>WSL</value>
+  </data>
+  <data name="虚拟机与容器" xml:space="preserve">
+    <value>Virtual machines &amp; containers</value>
+  </data>
+  <data name="图形界面与显卡驱动" xml:space="preserve">
+    <value>Desktop &amp; graphics drivers</value>
+  </data>
+  <data name="安全与防护" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="搜索与索引" xml:space="preserve">
+    <value>Search &amp; indexing</value>
+  </data>
+  <data name="系统更新" xml:space="preserve">
+    <value>Windows Update</value>
+  </data>
+  <data name="音频" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="打印" xml:space="preserve">
+    <value>Printing</value>
+  </data>
+  <data name="内核与系统核心" xml:space="preserve">
+    <value>Kernel &amp; core</value>
+  </data>
+  <data name="驱动与固件" xml:space="preserve">
+    <value>Drivers &amp; firmware</value>
+  </data>
+  <data name="Windows 系统" xml:space="preserve">
+    <value>Windows system</value>
+  </data>
+  <data name="其他" xml:space="preserve">
+    <value>Other</value>
+  </data>
 </root>

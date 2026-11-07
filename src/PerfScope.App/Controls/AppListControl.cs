@@ -194,7 +194,11 @@ internal sealed class AppListControl : Control
     /// <summary>更新一帧的应用数据（应在 UI 线程调用）。</summary>
     public void SetApps(AppSample[] apps)
     {
-        _apps = apps ?? Array.Empty<AppSample>();
+        // Core 的显示名是中文（系统模块名等），进 UI 前统一走一次本地化查表；
+        // 未命中时 Loc.T 原样返回，不会影响用户自定义名称。
+        _apps = apps is { Length: > 0 }
+            ? Array.ConvertAll(apps, app => app with { DisplayName = Loc.T(app.DisplayName) })
+            : Array.Empty<AppSample>();
         RebuildRows();
     }
 
@@ -711,6 +715,111 @@ internal sealed class AppListControl : Control
 
         double[] points = ring.Chronological();
         SparklineRenderer.Draw(graphics, bounds, points.AsSpan(0, ring.Count), _sparkBuffer, _sparkPen, null);
+    }
+
+    /// <summary>行数（供屏幕阅读器遍历）。</summary>
+    internal int AccessibleRowCount => _rows.Count;
+
+    /// <summary>某一行的可读文本。</summary>
+    internal string GetAccessibleRowText(int index)
+    {
+        if (index < 0 || index >= _rows.Count)
+        {
+            return string.Empty;
+        }
+
+        var row = _rows[index];
+        if (row.IsProcess)
+        {
+            return Loc.T("{0} · PID {1}", row.Process.Name, row.Process.Pid);
+        }
+
+        var app = row.App;
+        return Loc.T("{0} · CPU {1} · 内存 {2} · {3} 个进程",
+            app.DisplayName,
+            FormatUtil.Percent(app.CpuPercent),
+            FormatUtil.Bytes(app.WorkingSetBytes),
+            app.ProcessCount);
+    }
+
+    /// <summary>当前选中的行索引（-1 表示没有）。</summary>
+    internal int AccessibleSelectedIndex => _selectedIndex;
+
+    /// <summary>行高（逻辑像素，供可访问对象计算边界）。</summary>
+    internal int RowHeightForAccessibility => _rowHeight;
+
+    /// <summary>某一行相对控件顶部的 Y 偏移（含表头与滚动偏移）。</summary>
+    internal int RowTopForAccessibility(int index) => _headerHeight + index * _rowHeight - _scrollOffset;
+
+    /// <inheritdoc />
+    protected override AccessibleObject CreateAccessibilityInstance() => new AppListAccessibleObject(this);
+
+    /// <summary>
+    /// 自绘列表的行级可访问对象：屏幕阅读器可以逐行读出「应用 + CPU + 内存」或「进程 + PID」，
+    /// 并把当前选中项报告为 focused/selected。
+    /// </summary>
+    private sealed class AppListAccessibleObject : ControlAccessibleObject
+    {
+        private readonly AppListControl _owner;
+
+        public AppListAccessibleObject(AppListControl owner) : base(owner) => _owner = owner;
+
+        public override int GetChildCount() => _owner.AccessibleRowCount;
+
+        public override AccessibleObject? GetChild(int index)
+            => index >= 0 && index < _owner.AccessibleRowCount ? new RowAccessibleObject(_owner, index) : null;
+    }
+
+    private sealed class RowAccessibleObject : AccessibleObject
+    {
+        private readonly AppListControl _owner;
+        private readonly int _index;
+
+        public RowAccessibleObject(AppListControl owner, int index)
+        {
+            _owner = owner;
+            _index = index;
+        }
+
+        public override string? Name
+        {
+            get => _owner.GetAccessibleRowText(_index);
+            set { }
+        }
+
+        public override AccessibleRole Role => AccessibleRole.ListItem;
+
+        public override AccessibleObject? Parent => _owner.AccessibilityObject;
+
+        public override AccessibleStates State
+        {
+            get
+            {
+                var state = AccessibleStates.Selectable | AccessibleStates.Focusable;
+                if (_index == _owner.AccessibleSelectedIndex)
+                {
+                    state |= AccessibleStates.Selected | AccessibleStates.Focused;
+                }
+
+                return state;
+            }
+        }
+
+        public override Rectangle Bounds
+        {
+            get
+            {
+                try
+                {
+                    int top = _owner.PointToScreen(new Point(0, _owner.RowTopForAccessibility(_index))).Y;
+                    return new Rectangle(_owner.PointToScreen(Point.Empty).X, top, _owner.Width, _owner.RowHeightForAccessibility);
+                }
+                catch
+                {
+                    return Rectangle.Empty;
+                }
+            }
+        }
     }
 
     /// <summary>
