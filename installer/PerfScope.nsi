@@ -1,11 +1,11 @@
-﻿; PerfScope 安装包脚本（NSIS 3）
+; PerfScope 安装包脚本（NSIS 3）
 ;
 ; 构建：makensis /DAPP_VERSION=1.0.0 /DSOURCE_DIR=<publish 目录> /DOUTPUT_FILE=<输出 exe> installer\PerfScope.nsi
 
 Unicode true
 ManifestDPIAware true
 SetCompressor /SOLID lzma
-RequestExecutionLevel user
+RequestExecutionLevel admin
 
 !ifndef APP_VERSION
   !define APP_VERSION "0.0.0"

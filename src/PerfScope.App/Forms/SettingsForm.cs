@@ -129,7 +129,7 @@ internal sealed class SettingsForm : Form
 
         _topN = Num(5, 200, 1, _working.TopN);
         _startMinimized = Check(Loc.T("启动时最小化到托盘"), _working.StartMinimized);
-        _runAtStartup = Check(Loc.T("开机自动启动（写入当前用户注册表）"), _working.RunAtStartup);
+        _runAtStartup = Check(Loc.T("开机自动启动（计划任务，最高权限）"), _working.RunAtStartup);
         _closeBehavior = Combo(CloseBehaviorTexts, (int)_working.CloseBehavior);
         _showSelfUsage = Check(Loc.T("在状态栏显示监控器自身开销"), _working.ShowSelfUsage);
         _showSystemGroups = Check(Loc.T("在列表中显示系统模块与系统进程组"), _working.ShowSystemProcesses);

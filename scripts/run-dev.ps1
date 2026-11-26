@@ -90,7 +90,18 @@ $process = $null
 while ((Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 500
     $process = Get-Process -Id $c.ProcessId -ErrorAction SilentlyContinue
-    if (-not $process) { throw '实例已退出，请检查 logs\crash.log' }
+    if (-not $process) {
+        # 默认以管理员身份运行：WMI 起的那个外壳进程会立刻退出，真正的实例是提权后的新进程
+        $elevated = Get-Process PerfScope -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($elevated) {
+            $process = $elevated
+            if ($process.MainWindowHandle -ne [IntPtr]::Zero) { break }
+            continue
+        }
+
+        throw '实例已退出，请检查 logs\crash.log'
+    }
+
     if ($process.MainWindowHandle -ne [IntPtr]::Zero) { break }
 }
 

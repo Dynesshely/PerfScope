@@ -67,7 +67,12 @@ The window remembers its size, the splitter ratio and the active distribution ta
 
 ## Installation
 
-**Requirements** — Windows 10 or Windows 11 (x64). No .NET runtime, no administrator rights.
+**Requirements** — Windows 10 or Windows 11 (x64). No .NET runtime needed.
+
+PerfScope runs **elevated by default** (a UAC prompt appears on start) because Windows hides the
+executable paths and CPU times of protected processes from non-elevated callers — without elevation the
+totals are visibly smaller than Task Manager. If you decline the prompt, PerfScope keeps running unelevated
+and shows a "limited permissions" hint in the status bar.
 
 Every tagged release publishes two flavours on the [Releases](https://github.com/Dynesshely/PerfScope/releases) page:
 

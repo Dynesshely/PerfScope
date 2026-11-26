@@ -61,6 +61,15 @@
   `GetWindowRect` 会返回虚拟化坐标，只能截到窗口左上角。
 - 需要截「悬停态」时可给应用加 `--hover-demo`（强制显示坐标轴与数值卡片，仅用于截图/自测）。
 
+## 权限与自启
+
+- **默认以管理员身份运行**：启动时若未提权，用 `runas` 重新拉起自己（带 `--elevated` 标记避免死循环）；
+  用户拒绝 UAC 时按普通权限继续，状态栏显示「权限受限」。
+  原因：非管理员读不到受保护进程的可执行路径与 CPU 时间，统计会偏小。
+- **开机自启用计划任务**（`schtasks /Create /XML`，`RunLevel=HighestAvailable`），因为 HKCU Run 无法提权；
+  计划任务创建失败时退回 Run 项（不带提权），不报错。
+- 安装包 `RequestExecutionLevel admin`，winget 清单 `Scope: machine`。
+
 ## 代码约定
 
 - `PerfScope.Core`（采样 / 归并 / 历史 / 设置 / 日志）不引用 WinForms；UI 只通过 `CoreRuntime` 与

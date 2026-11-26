@@ -34,6 +34,16 @@ internal static class Program
         Application.ThreadException += OnThreadException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
+        // 默认以管理员身份运行：非管理员读不到受保护进程的 CPU 与路径，统计会偏小。
+        // 提权失败不能让程序不可用，退回普通权限并继续（状态栏会给出权限受限提示）。
+        if (!_isDemo && !Infrastructure.Elevation.IsElevated() && !HasFlag(args, Infrastructure.Elevation.RelaunchArgument))
+        {
+            if (Infrastructure.Elevation.TryRelaunchElevated(args, out _))
+            {
+                return 0;
+            }
+        }
+
         string mutexName = _isDemo ? MutexNameDemo : MutexName;
         using var mutex = new Mutex(true, mutexName, out bool createdNew);
         if (!createdNew)
