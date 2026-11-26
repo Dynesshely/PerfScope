@@ -1,6 +1,6 @@
-using PerfScope.App.Localization;
 using System.Diagnostics;
 using PerfScope.App.Infrastructure;
+using PerfScope.App.Localization;
 using PerfScope.Core;
 using PerfScope.Core.Settings;
 

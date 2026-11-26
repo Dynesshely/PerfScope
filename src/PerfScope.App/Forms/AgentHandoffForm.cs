@@ -1,5 +1,5 @@
-using PerfScope.App.Localization;
 using PerfScope.App.Infrastructure;
+using PerfScope.App.Localization;
 using PerfScope.Core.Settings;
 
 namespace PerfScope.App.Forms;

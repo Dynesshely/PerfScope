@@ -1,6 +1,6 @@
-using PerfScope.App.Localization;
 using System.Drawing.Drawing2D;
 using PerfScope.App.Infrastructure;
+using PerfScope.App.Localization;
 
 namespace PerfScope.App.Controls;
 

@@ -1,7 +1,7 @@
-using PerfScope.App.Localization;
 using PerfScope.App.Controls;
 using PerfScope.App.Forms;
 using PerfScope.App.Infrastructure;
+using PerfScope.App.Localization;
 using PerfScope.Core;
 using PerfScope.Core.Models;
 using PerfScope.Core.Settings;

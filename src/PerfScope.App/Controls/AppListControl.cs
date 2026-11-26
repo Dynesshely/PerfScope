@@ -1,7 +1,7 @@
-using PerfScope.App.Localization;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using PerfScope.App.Infrastructure;
+using PerfScope.App.Localization;
 using PerfScope.Core.Models;
 using PerfScope.Core.Settings;
 
