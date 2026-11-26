@@ -1,0 +1,15 @@
+# 统一行尾：仓库内一律以 LF 存储与检出
+# 原因：.editorconfig 要求 end_of_line = lf，而本机 core.autocrlf=true 会把文件检出成 CRLF，
+# 导致 dotnet format --verify-no-changes 在 CI 上必然失败（ENDOFLINE）。
+* text=auto eol=lf
+
+# Windows 批处理脚本仍用 CRLF，避免 cmd.exe 解析异常
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制资源不做换行转换
+*.png binary
+*.ico binary
+*.jpg binary
+*.zip binary
+*.exe binary
