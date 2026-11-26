@@ -124,6 +124,12 @@ internal static class NativeMethods
         /// <summary>LARGE_INTEGER UserTime。</summary>
         internal const int UserTime = 16;
 
+        /// <summary>LARGE_INTEGER DpcTime：延迟过程调用（DPC）占用，不计入任何进程。</summary>
+        internal const int DpcTime = 24;
+
+        /// <summary>LARGE_INTEGER InterruptTime：硬件中断（ISR）占用，不计入任何进程。</summary>
+        internal const int InterruptTime = 32;
+
         /// <summary>64 位下每一项的步长。</summary>
         internal const int StructSize = 48;
     }

@@ -66,7 +66,7 @@
 - `PerfScope.Core`（采样 / 归并 / 历史 / 设置 / 日志）不引用 WinForms；UI 只通过 `CoreRuntime` 与
   `Abstractions` 里的接口访问 Core。
 - Core 与 App 保持零第三方 NuGet 依赖；测试项目用 xunit。
-- 面向用户的字符串、注释、日志、提交信息一律中文。
+- 面向用户的字符串、代码注释、运行日志一律中文。
 - 界面参数改动优先做成 `AppSettings` 字段 + 设置页可调，不要在代码里写死。
 
 ### 开发期开关（仅调试/截图，不影响正常使用）

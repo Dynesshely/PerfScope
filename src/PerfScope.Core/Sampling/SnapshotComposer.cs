@@ -22,6 +22,12 @@ namespace PerfScope.Core.Sampling;
 public sealed class SnapshotComposer : ISnapshotComposer, ISnapshotProducer
 {
     /// <summary>单进程 CPU 的整机口径上限（%）。超过即视为计数器异常。</summary>
+    /// <summary>未归属 CPU 的特殊归并键。</summary>
+    public const string UnattributedCpuKey = "__unattributed_cpu__";
+
+    /// <summary>低于该百分比就不再单列未归属行，避免抖动出一堆 0.1% 的噪声行。</summary>
+    private const double MinUnattributedCpuPercent = 0.5;
+
     private const double MaxMachineCpuPercent = 200d;
 
     /// <summary>100ns 计时单位换算：1 秒 = 10,000,000 个 100ns。</summary>
@@ -41,6 +47,9 @@ public sealed class SnapshotComposer : ISnapshotComposer, ISnapshotProducer
     private readonly object _gate = new();
     private readonly Dictionary<int, ProcessRawSample> _previousProcesses = new();
     private readonly Dictionary<int, ProcessRawSample> _currentProcesses = new();
+    /// <summary>本帧所有进程的整机口径 CPU 合计，用于计算「未归属 CPU」。</summary>
+    private double _attributedCpuMachinePercent;
+
     private readonly Dictionary<string, AppGroup> _groups = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SmoothingBuffer> _appSmoothing = new(StringComparer.Ordinal);
     private readonly SmoothingBuffer _systemSmoothing = new();
@@ -119,6 +128,7 @@ public sealed class SnapshotComposer : ISnapshotComposer, ISnapshotProducer
 
             RefreshCurrentProcesses(current);
             _groups.Clear();
+            _attributedCpuMachinePercent = 0;
 
             int selfPid = Environment.ProcessId;
             double selfCpuMachinePercent = 0;
@@ -168,6 +178,7 @@ public sealed class SnapshotComposer : ISnapshotComposer, ISnapshotProducer
             double memoryPercent = ComputeMemoryPercent(current);
 
             AppSample[] apps = ApplyDisplayNameDedup(BuildApps(elapsedSeconds, smoothingWindow));
+            apps = AppendUnattributedCpu(apps, systemCpuPercent, logicalProcessors, perCore);
             CleanupSmoothing();
 
             StoreBaseline(current, timestamp);
@@ -302,6 +313,7 @@ public sealed class SnapshotComposer : ISnapshotComposer, ISnapshotProducer
         }
 
         group.CpuDisplayPercent += displayPercent;
+        _attributedCpuMachinePercent += machinePercent;
         group.WorkingSetBytes += process.WorkingSetBytes;
         group.PrivateBytes += process.PrivateBytes;
         group.ProcessCount++;
@@ -328,6 +340,43 @@ public sealed class SnapshotComposer : ISnapshotComposer, ISnapshotProducer
         {
             group.IconSourcePath = process.ExecutablePath;
         }
+    }
+
+    /// <summary>
+    /// 把「系统忙碌时间 - 所有进程 CPU 之和」补成一行「未归属 CPU」。
+    /// 这部分来自内核/驱动里的非进程开销（DPC/中断、驱动工作线程以外的工作、以及因权限读不到 CPU 时间的进程），
+    /// 过去它直接消失，导致「各应用合计」总是小于任务管理器里的整机 CPU。
+    /// </summary>
+    private AppSample[] AppendUnattributedCpu(AppSample[] apps, double systemCpuPercent, int logicalProcessors, bool perCore)
+    {
+        double attributed = _attributedCpuMachinePercent;
+        double busy = systemCpuPercent;
+        double unattributedMachine = busy - attributed;
+        if (unattributedMachine < MinUnattributedCpuPercent)
+        {
+            return apps;
+        }
+
+        double display = perCore ? unattributedMachine * logicalProcessors : unattributedMachine;
+        var extra = new AppSample(
+            UnattributedCpuKey,
+            "未归属 CPU",
+            null,
+            AppKind.Unknown,
+            null,
+            Math.Round(display, 2),
+            0,
+            0,
+            0,
+            0,
+            0,
+            "整机忙碌时间中没有落到任何进程上的部分（内核 / 驱动 / 中断 / 权限受限的进程）",
+            Array.Empty<AppProcessInfo>());
+
+        var result = new AppSample[apps.Length + 1];
+        Array.Copy(apps, result, apps.Length);
+        result[apps.Length] = extra;
+        return result;
     }
 
     private AppSample[] BuildApps(double elapsedSeconds, int smoothingWindow)

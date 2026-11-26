@@ -49,4 +49,6 @@ public sealed record SystemRawSample(
     long SystemCpuUserTicks,
     long TotalPhysicalBytes,
     long AvailablePhysicalBytes,
-    ProcessRawSample[] Processes);
+    ProcessRawSample[] Processes,
+    long SystemCpuDpcTicks = 0,
+    long SystemCpuInterruptTicks = 0);

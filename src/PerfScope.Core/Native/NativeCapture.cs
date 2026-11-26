@@ -94,7 +94,7 @@ public sealed class NativeCapture : ICapture, IDisposable
 
             int logicalProcessorCount = EnsureProcessorCount();
             ProcessRawSample[] processes = QueryProcesses();
-            ReadProcessorTimes(logicalProcessorCount, out long idleTicks, out long kernelTicks, out long userTicks);
+            ReadProcessorTimes(logicalProcessorCount, out long idleTicks, out long kernelTicks, out long userTicks, out long dpcTicks, out long interruptTicks);
             ReadPhysicalMemory(out long totalPhysicalBytes, out long availablePhysicalBytes);
 
             double elapsedMilliseconds = (Stopwatch.GetTimestamp() - startedTimestamp) * 1000.0 / Stopwatch.Frequency;
@@ -109,7 +109,9 @@ public sealed class NativeCapture : ICapture, IDisposable
                 userTicks,
                 totalPhysicalBytes,
                 availablePhysicalBytes,
-                processes);
+                processes,
+                SystemCpuDpcTicks: dpcTicks,
+                SystemCpuInterruptTicks: interruptTicks);
         }
     }
 
@@ -411,11 +413,19 @@ public sealed class NativeCapture : ICapture, IDisposable
 
     // ================= 系统 CPU =================
 
-    private unsafe void ReadProcessorTimes(int logicalProcessorCount, out long idleTicks, out long kernelTicks, out long userTicks)
+    private unsafe void ReadProcessorTimes(
+        int logicalProcessorCount,
+        out long idleTicks,
+        out long kernelTicks,
+        out long userTicks,
+        out long dpcTicks,
+        out long interruptTicks)
     {
         idleTicks = 0;
         kernelTicks = 0;
         userTicks = 0;
+        dpcTicks = 0;
+        interruptTicks = 0;
 
         int required = logicalProcessorCount * NativeMethods.ProcessorPerformanceOffset.StructSize;
         if (_processorBufferSize < required)
@@ -452,6 +462,8 @@ public sealed class NativeCapture : ICapture, IDisposable
             idleTicks += Unsafe.ReadUnaligned<long>(item + NativeMethods.ProcessorPerformanceOffset.IdleTime);
             kernelTicks += Unsafe.ReadUnaligned<long>(item + NativeMethods.ProcessorPerformanceOffset.KernelTime);
             userTicks += Unsafe.ReadUnaligned<long>(item + NativeMethods.ProcessorPerformanceOffset.UserTime);
+            dpcTicks += Unsafe.ReadUnaligned<long>(item + NativeMethods.ProcessorPerformanceOffset.DpcTime);
+            interruptTicks += Unsafe.ReadUnaligned<long>(item + NativeMethods.ProcessorPerformanceOffset.InterruptTime);
         }
     }
 
