@@ -1,0 +1,282 @@
+# PerfScope 交接文档
+
+> 最后更新：2026-11-28 · 对应提交 `27277d2` · 版本 0.1.4
+> 本文档面向「接手这个项目的下一个人 / 下一个 AI 会话」，目标是让你在 30 分钟内能改代码、能验证、能发版。
+
+---
+
+## 1. 这是什么
+
+PerfScope 是一个 Windows 桌面应用级资源监控器：它把几百个进程**归并成"应用"**，让你看到"哪个应用在吃 CPU"，而不是"哪个 PID 在吃 CPU"。浏览器渲染进程、Electron 辅助进程会合并成一行；WSL、显卡驱动栈、内核与安全服务等 Windows 子系统也会作为独立"应用"出现。
+
+| 项目属性 | 值 |
+|---|---|
+| 仓库 | https://github.com/Dynesshely/PerfScope |
+| 技术栈 | .NET 10（`net10.0-windows`）+ WinForms，**零第三方 NuGet**（Core / App） |
+| 当前版本 | 0.1.4（tag `v0.1.4`） |
+| 最近发布 | 2026-11-07 |
+| 代码规模 | 约 19k 行 C#（src），16 个测试文件，159 个单测 |
+| 界面语言 | 中文 / English（resx 资源化，运行时切换） |
+| 许可 | MIT |
+
+**产品定位的一句话**：轻量、常驻、离线、无需安装运行时的应用级资源监控器，且能直接产出可以喂给 AI 的分析数据。
+
+---
+
+## 2. 5 分钟上手
+
+```powershell
+# 构建（0 警告 0 错误是底线）
+dotnet build -c Debug
+
+# 跑测试（本机 dotnet test 不可用，见 §7，必须用仓库内的反射运行器）
+.\scripts\run-tests.ps1
+
+# 启动开发版（会构建 → 镜像到工作区外 → 分离启动）
+.\scripts\run-dev.ps1            # 构建 + 启动
+.\scripts\run-dev.ps1 -NoBuild   # 只重启
+
+# 自身开销门禁（CPU ≤ 2%，RSS ≤ 200 MB）
+.\scripts\check-perf.ps1
+
+# 格式门禁（CI 会跑，必须通过）
+dotnet format --verify-no-changes
+
+# 打包发布产物（portable zip + NSIS 安装包 + SHA256SUMS）
+.\scripts\package.ps1 -Version 0.1.4
+```
+
+**为什么必须用 `run-dev.ps1` 而不是直接双击 exe**：见 §7.1 的沙箱陷阱。
+
+---
+
+## 3. 仓库地图
+
+```
+src/
+  PerfScope.Core/            不含 WinForms 的全部核心逻辑
+    Native/                  NtQuerySystemInformation 批采样、进程路径解析
+    Sampling/                SnapshotComposer（归并 + CPU 归一化）、MonitorEngine（采样循环）、SmoothingBuffer
+    Grouping/                归并算法：AppClassifier、InstallRootResolver、SystemModuleCatalog、ChannelDetector…
+    History/                 分钟级聚合落盘、趋势环形缓冲
+    Insights/                事件、日报、周报、Agent Prompt
+    Settings/                AppSettings + 校验 + 持久化
+    Diagnostics/             脱敏诊断包、文件日志
+    Updates/                 AppVersion（语义化版本解析/比较）
+  PerfScope.App/             WinForms 外壳
+    Program.cs               入口：提权、单实例、参数解析
+    AppHost.cs               组装 Core 与 UI 的门面（UI 只通过它访问 Core）
+    MainForm.cs / TrayAppContext.cs
+    Controls/                全自绘控件：列表、树图、趋势图、滚动条、工具条
+    Forms/                   设置、历史、关于、Agent 交接、新手引导、规则编辑
+    Infrastructure/          主题、图标、自绘控件基类、更新
+      Elevation.cs           默认提权（runas 重新拉起自己，--elevated 防死循环）
+      StartupRegistration.cs 开机自启（计划任务 HighestAvailable，失败退回 HKCU Run）
+    Localization/            Loc.cs + Strings.resx / Strings.en.resx
+  PerfScope.Cli/            无界面命令行（冒烟测试 / CI 性能门禁 / 报告生成）
+tests/
+  PerfScope.Tests/           xunit 测试（纯逻辑，不依赖桌面）
+  PerfScope.TestRunner/      反射测试运行器（绕开本机 VSTest 问题）
+tools/PerfScope.Cli/         命令行工具工程
+scripts/                     构建、运行、测试、打包、截图、性能门禁
+installer/PerfScope.nsi      NSIS 安装包脚本（UTF-8 **带 BOM**，否则 makensis 报错）
+docs/                        架构、归并规则、契约、验收、winget 清单
+.github/workflows/           ci.yml / release.yml / codeql.yml
+```
+
+---
+
+## 4. 数据流（改代码前必须理解）
+
+```
+NativeCapture.Query()           一次 NtQuerySystemInformation 拿到全部进程 + 系统 CPU/内存计数器
+        │                       （外加 DPC / 中断时间，用于计算"未归属 CPU"）
+        ▼
+SnapshotComposer.Compose()      差分算 CPU% → AppClassifier 归并 → 按应用聚合 → 平滑
+        │                       → 追加「未归属 CPU」行（整机忙碌 − 各进程之和）
+        ▼
+SnapshotFrame                   不可变快照：整机指标 + AppSample[]
+        ├── MainForm / 控件     UI 渲染（全自绘）
+        ├── HistoryStore        分钟级聚合落盘（%LOCALAPPDATA%\PerfScope\history）
+        └── Insights            事件、日报、周报、Agent Prompt
+```
+
+**CPU 百分比有两种口径**，由 `AppSettings.CpuMode` 决定：
+
+- `MachinePercent`（默认）：整机口径，0–100%，与任务管理器一致
+- `PerCorePercent`：单核口径，可以超过 100%（32 核最多 3200%）
+
+换算点只有一处：`SnapshotComposer` 里的 `displayPercent = perCore ? machinePercent * logicalProcessors : machinePercent`。**新增任何 CPU 统计都必须同时处理这两种口径**，否则数字会对不上。
+
+---
+
+## 5. 归并算法优先级（产品的核心价值）
+
+按顺序命中，命中即停：
+
+1. 用户自定义规则（设置页可编辑）
+2. Windows 系统功能模块（`SystemModuleCatalog`：WSL、显卡栈、安全、更新、音频、打印、内核、驱动…）
+3. 显式排除（系统空闲 PID 0 等）
+4. 版本信息：`ProductName` + `CompanyName` + 发行通道（beta/canary/dev…）
+5. 安装根目录（从 exe 路径向上找 `Program Files` 一级）
+6. exe 所在目录
+7. exe 文件名
+
+每一步都会记录**归并依据**（`AppIdentity.Reason`），UI 里能看到，这是本项目的可解释性卖点——改归并逻辑时不要把 Reason 弄丢。
+
+细节见 `docs/GROUPING.md`。
+
+---
+
+## 6. 约定与红线
+
+这些是长期约定，改代码前请先读：
+
+| 约定 | 说明 |
+|---|---|
+| **零第三方 NuGet** | Core 与 App 不引第三方包（测试项目可以用 xunit）。想加 GPU 指标这类依赖，必须先讨论取舍。 |
+| **Core 不引用 WinForms** | UI 通过 `AppHost` 与 `Core.Abstractions` 里的接口访问 Core。 |
+| **注释 / 日志 / 提交信息用中文** | 面向用户的字符串走 resx，**key 就是中文原文**（`Loc.T("暂停监控")`），英文在 `Strings.en.resx`。新增文案必须同时补英文条目。 |
+| **行尾统一 LF** | `.editorconfig` 要求 LF，`.gitattributes` 强制 `* text=auto eol=lf`。改完代码跑一次 `dotnet format`。 |
+| **默认以管理员运行** | 非管理员读不到受保护进程的路径与 CPU 时间，数字会偏小。提权失败要能优雅降级（状态栏提示）。 |
+| **隐私** | 唯一网络请求是可关闭的更新检查；零遥测；诊断包必须脱敏（主机名先于用户名替换，顺序错了会漏）。 |
+| **性能预算** | 自身 CPU ≤ 2%、RSS ≤ 200 MB（实测 0.05% / 45 MB）。`check-perf.ps1` 是硬门禁，CI 也跑。 |
+| **UI 参数一律可调** | 界面参数改动优先做成 `AppSettings` 字段 + 设置页可调，不要在代码里写死。 |
+
+---
+
+## 7. 已知陷阱（都是踩过的坑，别重走）
+
+### 7.1 沙箱按「进程映像路径」生效（本机特有）
+
+exe 放在工作区内时，DSH 沙箱会过滤进程表（约 200 个进程）并拒绝写 `%LOCALAPPDATA%`；放到工作区外一切正常（约 1100 个进程）。
+
+**这不是代码 bug，不要试图"修复"**。`scripts/run-dev.ps1` 就是把产物镜像到 `%LOCALAPPDATA%\PerfScope-dev\bin` 再启动。看到只有 200 个进程就是镜像没生效。
+
+### 7.2 `dotnet test` 在本机不可用
+
+VSTest testhost 启动时打开父进程句柄会被拒绝（`Win32Exception (5)`）。必须用 `tests/PerfScope.TestRunner`（反射运行器，`run-tests.ps1` 已封装）。
+
+### 7.3 本地 format 绿、CI 必红 = 行尾问题
+
+现象：本地 `dotnet format --verify-no-changes` 通过，CI 报 `ENDOFLINE: Replace 2 characters with '\n'`。
+
+原因：`.editorconfig` 要求 LF，但本机 `core.autocrlf=true` 把文件检出成 CRLF，仓库当初又没有 `.gitattributes`。
+
+修法：`.gitattributes` 已有（`* text=auto eol=lf`），若换机器后复发，跑 `git add --renormalize .`。
+
+### 7.4 CI 的 imports 门禁
+
+`dotnet format` 会重排 using（`System.*` 在前）。写完代码顺手跑 `dotnet format`，否则 CI 报 `IMPORTS`。
+
+### 7.5 NSIS 脚本编码
+
+`installer/PerfScope.nsi` 必须是 **UTF-8 with BOM**，否则 `makensis` 报 `Bad text encoding`。
+
+### 7.6 winget 清单三层校验（被打了三次回来）
+
+1. locale 文件 `ManifestType` 必须是 `defaultLocale`（不是 `locale`）
+2. 安装信息必须在 `Installers:` 数组里（1.10 schema），不能是顶层 `InstallerUrl`
+3. 每个 yaml **首行必须有** `# yaml-language-server: $schema=<对应 schema URL>`，且 URL 要与 `ManifestType` 匹配
+
+本地可先用官方 schema 校验（`.meta` 里有脚本参考）。
+
+### 7.7 提权与自启的连带关系
+
+`HKCU...Run` 无法提权（UAC 会以普通权限拉起）。所以开机自启改成了**计划任务 + `HighestAvailable`**；计划任务创建失败才退回 Run 项。
+
+### 7.8 SDK 版本漂移
+
+`global.json` 原本锁 `10.0.402`，某次环境更新后本机不再有该 SDK。现在写的是 `10.0.100-rc.1.25451.107` + `rollForward: latestMajor`。换机器时先 `dotnet --list-sdks` 对齐。
+
+### 7.9 发布流水线会被测试拦住
+
+tag 推送后 `release.yml` 会先跑测试。测试挂了就是发版失败（曾因周报测试断言与实现口径不一致触发过一次）。**发版前本地务必 `run-tests.ps1`**。
+
+---
+
+## 8. 发版流程
+
+```powershell
+# 1. 改版本号
+#    src/PerfScope.App/PerfScope.App.csproj  →  <Version>0.1.5</Version>
+# 2. 补 CHANGELOG
+# 3. 本地自检
+.\scripts\run-tests.ps1
+dotnet format --verify-no-changes
+.\scripts\check-perf.ps1
+# 4. 打 tag 并推送（CI 自动构建 + 发布）
+git tag v0.1.5; git push origin v0.1.5
+```
+
+推送后 `.github/workflows/release.yml` 会：跑测试 → 构建单文件 portable zip → 用 NSIS 打安装包 → 生成 `SHA256SUMS.txt` → 创建 GitHub Release。
+
+**产物**：`PerfScope-<ver>-win-x64-portable.zip`、`PerfScope-Setup-<ver>-win-x64.exe`、`SHA256SUMS.txt`。
+
+**代码签名**：暂无。安装包和 exe 都是未签名状态（这是已知的产品化缺口，见 §9）。
+
+---
+
+## 9. 现状与待办
+
+### 已完成
+
+- 应用级归并（7 级优先 + 可解释的归并依据）
+- 双分布视图（内存树图 / CPU 树图）+ 自绘悬浮卡片 + 图标
+- 顶部趋势卡（可悬停看坐标与数值）
+- 分钟级历史 + 事件流 + 日报 + 周报（本周 vs 上周）
+- 深色/浅色主题、高对比度主题、全自绘主题化控件
+- i18n：resx 资源化、中英双语、运行时切换（重启生效）
+- 自动更新（GitHub Releases 检查 + SHA256 校验 + 可关闭）
+- 脱敏诊断包导出
+- 默认管理员运行 + 权限受限降级提示（未归属 CPU 行）
+- 首次引导、键盘快捷键、行级 UIA 可访问性
+- CI：构建 + 测试 + 格式门禁 + 性能门禁 + CodeQL + dependabot
+- winget 清单（PR 已提交，见下）
+
+### 待办（按优先级）
+
+| 优先级 | 事项 | 说明 |
+|---|---|---|
+| P1 | **代码签名** | Azure Trusted Signing 或 OV 证书。没有签名，SmartScreen 会拦、winget 审核会更严。 |
+| P1 | **兼容性验证** | Win10 21H2/22H2、Win11 23H2/24H2、150%/200% DPI、双屏混合缩放。需要真机。 |
+| P1 | **winget PR 跟进** | PR [microsoft/winget-pkgs#474051](https://github.com/microsoft/winget-pkgs/pull/474051) 状态 OPEN / BLOCKED：CLA 与 Manifest Validation 已过，后续校验（URL、安装扫描、实际安装）待跑。**注意**：0.1.4 的清单是 `Scope: user`，而代码已改为默认管理员运行；下一版应改 `Scope: machine` 并重新提清单。 |
+| P2 | **GPU 指标** | 需要 PDH（`\\GPU Engine(*)\\Utilization Percentage`）。`System.Diagnostics.PerformanceCounter` 要引 NuGet，破"零依赖"；纯 P/Invoke 代码量大。**需要单独立项决策**。 |
+| P2 | 告警规则化增强 | 现有：整机阈值 + 应用级 CPU 阈值气泡（按应用冷却）。可加：持续时长条件、写入事件流、托盘红点。 |
+| P3 | Store / MSIX 分发 | 低优先级。 |
+| — | 安装包 Scope | `installer/PerfScope.nsi` 已改 `RequestExecutionLevel admin`，但安装目录仍是 `%LOCALAPPDATA%\Programs`，与 admin 语义略有不一致，可在下一版一并调整。 |
+
+### 已知限制（有意为之，不是 bug）
+
+- 自绘列表/树图只做到"行级可读 + 控件可访问"，没有完整实现 UIA Selection 事件回调
+- Core 层仍有少量中文文案（分析事件 note、报告 Markdown），英文界面下日报正文会混中文
+- 更新流程不做静默就地替换（托盘程序自我替换风险高），而是提示 + 下载 + 用户确认
+- `v0.1.4` 之后 main 上有 13 个提交（未归属 CPU、默认提权、CI 修复等），**尚未发新版本**
+
+---
+
+## 10. 故障排查速查
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 只有约 200 个进程 | 沙箱按映像路径生效 | 用 `run-dev.ps1`，exe 必须在工作区外 |
+| 应用 CPU 合计 ≠ 整机 CPU | 缺"未归属"部分 | 已有「未归属 CPU」行；若仍差很多，检查权限与 DPC 采样 |
+| 数字比任务管理器小 | 非管理员 | 确认进程令牌是 admin |
+| 启动闪退 | 单实例互斥 | 先 `Get-Process PerfScope` 清理 |
+| CI 格式门禁红 | 行尾 / using 顺序 | 跑 `dotnet format`，检查 `.gitattributes` |
+| `makensis` 编码报错 | nsi 缺 BOM | 用 UTF-8 BOM 重写 |
+| 测试跑不起来 | VSTest 被环境拒绝 | 用 `run-tests.ps1`（反射运行器） |
+
+---
+
+## 11. 给下一个 AI 会话的提示
+
+1. **每轮收尾都要留一个运行中的 dev 实例**（`run-dev.ps1`），并确认标题与数据目录无 `crash.log`。
+2. **能截图自证的改动自己验证**（`--mock` 虚构数据 + `scripts/capture-window.cs`），不能截图的（UIA、CI、性能、文档）攒成一批交给用户验收。
+3. **`--mock` 绝不用真实数据截图**，避免把用户隐私带进 README / issue。
+4. **改 CPU 相关逻辑时同时验证两种口径**（整机 / 单核），并跑一次 CLI 采样对账：
+   ```powershell
+   PerfScope.Cli.exe --frames 4 --interval 2000 --top 300 --data-dir <临时目录>
+   ```
+5. **发版与合并都需要用户明确授权**，CI 全绿不等于可以合并。
+6. 本机环境细节（沙箱、SDK、端口、凭据位置）不写进仓库，放在工作区 `.meta/` 下。

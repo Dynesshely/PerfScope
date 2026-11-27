@@ -233,6 +233,12 @@ PerfScope runs fully offline. The only network request is the optional update ch
 once per start-up and sends no identifiers. Diagnostics bundles are redacted (machine name, user name and
 profile paths are replaced) and are only created when you explicitly export one.
 
+## Getting started (contributors)
+
+New to the codebase? Read [`docs/HANDOFF.md`](docs/HANDOFF.md) first — it maps the repository, explains the
+data flow, lists the long-standing conventions and the traps that have already cost time (line endings, sandbox
+path behaviour, winget manifest validation, release pipeline).
+
 ## Structure
 
 ~~~text
