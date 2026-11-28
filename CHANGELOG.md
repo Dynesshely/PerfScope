@@ -5,14 +5,36 @@ All notable changes to PerfScope are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-11-28
+
+### Changed
+
+- **GUI 层整体重写为 WPF + MVVM**：外壳换成自绘标题栏的 WPF 窗口壳（保留系统原生最小化/最大化动画与
+  Win11 Snap Layouts），界面全部改为数据绑定驱动 —— 视图不再持有业务状态，主列表、分布视图、趋势图
+  的数据装配都在 ViewModel 里完成。WinForms 工程与全部自绘控件代码已删除。
+- **分布视图（树图）改为数据驱动**：Squarified 布局算法下沉到 `PerfScope.Core.Analysis.TreemapLayout`
+  （纯几何、带单测），ViewModel 输出像素矩形，视图只负责绘制。
+- **托盘改为纯 P/Invoke 的 Shell_NotifyIcon + WPF 菜单**，不再依赖 WinForms 的 NotifyIcon；
+  关闭到托盘、暂停/继续、开机自启、退出等入口保持一致。
+- **设置页重写**为 7 个标签页的完整表单（采样 / 界面 / 归并规则 / 历史 / 告警 / 智能分析 / 诊断），
+  自定义规则改成「左侧列表 + 右侧内联编辑」，不再弹独立对话框。
+- 主题改为三套调色板（深色 / 浅色 / 高对比度）资源字典，换主题即时生效，不需要重建窗口。
+
+- Header cards are slightly taller and the trend axis labels are aligned correctly, so the hover axes stay
+  readable.
+- Path-fragment matching for system modules is now case-insensitive, so differently-cased install paths no
+  longer miss the intended module.
 
 ### Added
+
+- **趋势图悬停坐标轴**：顶部 CPU / 内存卡片内嵌折线图，鼠标悬停显示该点数值（`--hover-demo` 可强制显示）。
+- 主界面列头可点击切换排序（CPU / 内存 / 应用名 / 进程数 / IO），排序状态记入 `ui.json`。
 
 - **Drivers & firmware** system module (`驱动与固件`): driver services and OEM hardware helpers
   (Armoury Crate, AMD/ATI services, Realtek, DriverStore helpers, …) are grouped into one readable row
   instead of showing up as unrecognised processes.
 - Application grouping now recognises **release channels**, so e.g. Microsoft Edge stable and Edge Beta
+  are reported as two separate applications instead of being merged into one.
 - **Weekly report**: the toolbar gained a `Weekly` button (and `PerfScope.Cli --weekly`) that compares this
   week with the previous week and writes `analysis/<date>-weekly.md|json`.
 - **High contrast support**: when Windows enables a high contrast theme, the palette switches to system colours.
@@ -34,14 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with English translations in `Strings.en.resx`; the language can be switched in Settings
   (Follow system / 中文 / English) and is stored in `settings.json`.
   Untranslated strings fall back to Chinese instead of showing empty text.
-  are reported as two separate applications instead of being merged into one.
 
-### Changed
+### Fixed
 
-- Header cards are slightly taller and the trend axis labels are aligned correctly, so the hover axes stay
-  readable.
-- Path-fragment matching for system modules is now case-insensitive, so differently-cased install paths no
-  longer miss the intended module.
+- CHANGELOG 里「发行通道」条目被拆成两行的排版错误。
 
 ## [0.1.2] - 2026-11-02
 

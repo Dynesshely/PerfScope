@@ -1,6 +1,6 @@
 # PerfScope 交接文档
 
-> 最后更新：2026-11-28 · 对应提交 `27277d2` · 版本 0.1.4
+> 最后更新：2026-11-28 · 版本 0.2.0（GUI 层已重写为 WPF + MVVM）
 > 本文档面向「接手这个项目的下一个人 / 下一个 AI 会话」，目标是让你在 30 分钟内能改代码、能验证、能发版。
 
 ---
@@ -12,10 +12,10 @@ PerfScope 是一个 Windows 桌面应用级资源监控器：它把几百个进�
 | 项目属性 | 值 |
 |---|---|
 | 仓库 | https://github.com/Dynesshely/PerfScope |
-| 技术栈 | .NET 10（`net10.0-windows`）+ WinForms，**零第三方 NuGet**（Core / App） |
-| 当前版本 | 0.1.4（tag `v0.1.4`） |
-| 最近发布 | 2026-11-07 |
-| 代码规模 | 约 19k 行 C#（src），16 个测试文件，159 个单测 |
+| 技术栈 | .NET 10（`net10.0-windows`）+ WPF（MVVM），**零第三方 NuGet**（Core / Wpf） |
+| 当前版本 | 0.2.0（WPF 重写，尚未打 tag） |
+| 最近发布 | 0.1.4（2026-11-07）；0.2.0 待发 |
+| 代码规模 | 约 17k 行 C# + 3k 行 XAML，17 个测试文件，168 个单测 |
 | 界面语言 | 中文 / English（resx 资源化，运行时切换） |
 | 许可 | MIT |
 
@@ -54,7 +54,7 @@ dotnet format --verify-no-changes
 
 ```
 src/
-  PerfScope.Core/            不含 WinForms 的全部核心逻辑
+  PerfScope.Core/            不含 UI 框架的全部核心逻辑
     Native/                  NtQuerySystemInformation 批采样、进程路径解析
     Sampling/                SnapshotComposer（归并 + CPU 归一化）、MonitorEngine（采样循环）、SmoothingBuffer
     Grouping/                归并算法：AppClassifier、InstallRootResolver、SystemModuleCatalog、ChannelDetector…
@@ -63,16 +63,21 @@ src/
     Settings/                AppSettings + 校验 + 持久化
     Diagnostics/             脱敏诊断包、文件日志
     Updates/                 AppVersion（语义化版本解析/比较）
-  PerfScope.App/             WinForms 外壳
-    Program.cs               入口：提权、单实例、参数解析
-    AppHost.cs               组装 Core 与 UI 的门面（UI 只通过它访问 Core）
-    MainForm.cs / TrayAppContext.cs
-    Controls/                全自绘控件：列表、树图、趋势图、滚动条、工具条
-    Forms/                   设置、历史、关于、Agent 交接、新手引导、规则编辑
-    Infrastructure/          主题、图标、自绘控件基类、更新
+  PerfScope.Wpf/             WPF 外壳（MVVM）
+    Views/                   纯声明式 XAML（主窗口 / 设置 / 历史 / 关于 / 接入 Agent / 引导）
+    ViewModels/              Main、Settings、TreemapPanel、History、AppRow …（业务装配都在这里）
+    Services/                ShellController、DialogService、ThemeService、IconService、TrayService
+    Controls/                TrendChart（折线 + 悬停坐标轴）、TreemapView（Canvas 绑定矩形）
+    Chrome/                  窗口壳（自绘标题栏、Snap Layouts、原生窗口动画）
+    Themes/                  三套调色板 + 控件样式（DynamicResource）
+    Wpf/WpfBootstrap.cs      入口：提权、单实例、参数解析、服务装配
+    Shared/AppHost.cs        组装 Core 与 UI 的门面（UI 只通过它访问 Core）
+    Bootstrap/               命令行解析、单实例互斥 + 唤醒通道
+    Infrastructure/          提权、开机自启、更新检查、图标、内存工作集修剪
       Elevation.cs           默认提权（runas 重新拉起自己，--elevated 防死循环）
       StartupRegistration.cs 开机自启（计划任务 HighestAvailable，失败退回 HKCU Run）
     Localization/            Loc.cs + Strings.resx / Strings.en.resx
+    Mvvm/                    ObservableObject / RelayCommand / AsyncRelayCommand（自建，零第三方）
   PerfScope.Cli/            无界面命令行（冒烟测试 / CI 性能门禁 / 报告生成）
 tests/
   PerfScope.Tests/           xunit 测试（纯逻辑，不依赖桌面）
@@ -189,6 +194,26 @@ VSTest testhost 启动时打开父进程句柄会被拒绝（`Win32Exception (5)
 
 `global.json` 原本锁 `10.0.402`，某次环境更新后本机不再有该 SDK。现在写的是 `10.0.100-rc.1.25451.107` + `rollForward: latestMajor`。换机器时先 `dotnet --list-sdks` 对齐。
 
+### 7.10 WPF 的 XAML 编译会生成一个临时工程（`_wpftmp`）
+
+`UseWPF` 的工程在编译 XAML 时会生成 `PerfScope.Wpf_<hash>_wpftmp.csproj` 再过一遍源码。
+**这个临时工程不继承 `Directory.Build.props` 里的一部分属性**（本机实测：`ImplicitUsings` 丢失），
+表现为「`dotnet build` 正常、但报 `当前上下文中不存在名称 Path`」这类莫名错误。
+
+修法：在 WPF 工程里放一份显式的 `GlobalUsings.cs`（本项目已有），不要依赖隐式 using。
+
+### 7.11 不要 Freeze 含 DynamicResource 画笔的 Pen
+
+`new Pen(brush, w).Freeze()` 在 `brush` 是从资源字典取来、本身未冻结时必抛
+`InvalidOperationException: 无法冻结此 Freezable`。这个异常在 `OnRender` 里抛出会被
+Dispatcher 每次重绘重复触发 —— 曾经一秒钟堆出 6 个模态对话框把界面锁死。
+现在 `App.xaml.cs` 对界面线程异常只弹一次提示，但仍然要在渲染代码里避免 Freeze。
+
+### 7.12 树图与列表必须用同一套内存口径
+
+旧 WinForms 版树图固定用工作集，而列表跟随 `MemoryMode`（工作集 / 私有字节），
+两处数字对不上是历史遗留问题。WPF 版已统一：`TreemapPanelViewModel.SetMemoryMode`
+由 `MainViewModel` 按设置同步。新增任何内存展示都要走同一口径。
 ### 7.9 发布流水线会被测试拦住
 
 tag 推送后 `release.yml` 会先跑测试。测试挂了就是发版失败（曾因周报测试断言与实现口径不一致触发过一次）。**发版前本地务必 `run-tests.ps1`**。
@@ -219,7 +244,18 @@ git tag v0.1.5; git push origin v0.1.5
 
 ## 9. 现状与待办
 
-### 已完成
+### 0.2.0：GUI 重写为 WPF + MVVM（已完成）
+
+- 窗口壳换成自绘标题栏的 WPF 壳：保留系统原生最小化 / 最大化 / 还原动画与 Win11 Snap Layouts；
+  标题栏高度与 `WindowChrome.CaptionHeight` 一致（改高度必须同时改两处）。
+- 全部界面数据驱动：主列表、树图、趋势图、状态栏都由 ViewModel 供给；视图只剩 XAML 与很薄的 code-behind。
+- 树图布局算法下沉到 `Core/Analysis/TreemapLayout.cs`（Squarified，纯几何，9 个单测覆盖面积/不重叠/不越界）。
+- 托盘改为纯 P/Invoke `Shell_NotifyIcon` + WPF 菜单；关闭到托盘、暂停/继续、开机自启、退出沿用旧行为。
+- 主题改为三套调色板资源字典（深色 / 浅色 / 高对比度），换主题即时生效。
+- **WPF 的工作集比 WinForms 高**：已用 `MemoryTrimmer` 在启动 10 秒后与每 5 分钟做一次工作集修剪，
+  实测稳定在 130~150 MB（阈值 200 MB）。若后续加控件导致上升，先查图标缓存与虚拟化设置。
+
+### 已完成（0.1.x）
 
 - 应用级归并（7 级优先 + 可解释的归并依据）
 - 双分布视图（内存树图 / CPU 树图）+ 自绘悬浮卡片 + 图标
