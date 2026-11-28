@@ -19,6 +19,7 @@ public sealed class AppHost : IDisposable
     private readonly SessionAnalytics? _analytics;
     private readonly InsightStore? _insights;
     private bool _paused;
+    private bool _startupStateApplied;
     private bool _disposed;
     private DateTime _lastReportUtc = DateTime.MinValue;
 
@@ -259,9 +260,16 @@ public sealed class AppHost : IDisposable
                 SafeLog(LogLevel.Warn, "历史模块热更新设置失败", ex);
             }
 
-            if (!_demo && !StartupRegistration.TryApply(next.RunAtStartup, out string? error))
+            // 开机自启只在设置真的变化时同步：TryApply 会启动 schtasks.exe（最长等 8 秒），
+            // 每次保存都跑一遍既慢又实无必要
+            if (!_demo && (!_startupStateApplied || Settings.RunAtStartup != next.RunAtStartup))
             {
-                SafeLog(LogLevel.Warn, error ?? "同步开机启动失败");
+                if (!StartupRegistration.TryApply(next.RunAtStartup, out string? error))
+                {
+                    SafeLog(LogLevel.Warn, error ?? "同步开机启动失败");
+                }
+
+                _startupStateApplied = true;
             }
 
             SettingsChanged?.Invoke(this, next);

@@ -307,6 +307,7 @@ public sealed class SettingsViewModel : ObservableObject
 
     private void Save()
     {
+        bool languageChanged = !string.Equals(_host.Settings.Language, _draft.Language, StringComparison.OrdinalIgnoreCase);
         _draft.Rules = Rules.Select(r => r.Rule).ToList();
         SettingsValidator.Normalize(_draft);
 
@@ -314,6 +315,14 @@ public sealed class SettingsViewModel : ObservableObject
         {
             StatusText = _host.LastError ?? Localization.Loc.T("保存设置失败");
             return;
+        }
+
+        if (languageChanged)
+        {
+            // 语言在启动时就已确定（XAML 与 resx 在窗口加载时求值），只能重启生效
+            Services.MessageBoxService.ShowInfo(
+                Localization.Loc.T("界面语言已保存，重启 PerfScope 后生效。"),
+                Localization.Loc.T("界面语言"));
         }
 
         Saved?.Invoke(this, EventArgs.Empty);
