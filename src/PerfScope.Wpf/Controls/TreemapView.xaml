@@ -33,8 +33,10 @@
                                            Visibility="{Binding ShowValue, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                             <!-- 应用图标：与旧版一致画在右下角，块太小就整体隐藏，避免压字 -->
-                            <Image Source="{Binding Icon}" Width="20" Height="20" Margin="0,0,6,5"
-                                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            <Image Source="{Binding Icon}" Width="{Binding IconSize}" Height="{Binding IconSize}"
+                                   Margin="{Binding IconMargin}"
+                                   HorizontalAlignment="{Binding IconHorizontalAlignment}"
+                                   VerticalAlignment="{Binding IconVerticalAlignment}"
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    Visibility="{Binding IconVisibility}"/>
                         </Grid>

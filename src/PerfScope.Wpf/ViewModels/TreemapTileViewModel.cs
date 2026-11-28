@@ -99,24 +99,63 @@ public sealed class TreemapTileViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(ShowLabel));
                 OnPropertyChanged(nameof(ShowValue));
-                OnPropertyChanged(nameof(ShowIcon));
-                OnPropertyChanged(nameof(IconVisibility));
+                OnPropertyChanged(nameof(IconSize));
+                OnPropertyChanged(nameof(IconHorizontalAlignment));
+                OnPropertyChanged(nameof(IconVerticalAlignment));
+                OnPropertyChanged(nameof(IconMargin));
             }
         }
     }
 
-    /// <summary>是否显示应用名（太小的块只留颜色，避免文字糊成一团）。</summary>
+    /// <summary>是否显示应用名（太小的块只留图标，避免文字糊成一团）。</summary>
     public bool ShowLabel => Width >= 58 && Height >= 22;
 
     /// <summary>是否显示数值（更小的块只显示名字）。</summary>
     public bool ShowValue => Width >= 76 && Height >= 38;
 
-    /// <summary>是否显示应用图标（与旧版一致：块够大才画，避免压住文字）。</summary>
-    public bool ShowIcon => Width >= 72 && Height >= 52;
+    /// <summary>有标题就贴右下角（避免压字）；没有标题才把图标居中。</summary>
+    private bool IconAtCorner => ShowLabel;
 
-    /// <summary>图标是否可见（块够大且确实拿到了图标）。</summary>
+    /// <summary>空间足够时用完整尺寸的角标图标。</summary>
+    private bool IconBesideText => ShowLabel && Width >= 72 && Height >= 52;
+
+    /// <summary>图标是否显示：只要有图标就显示，与块大小无关。</summary>
+    public bool ShowIcon => Icon is not null;
+
+    /// <summary>
+    /// 图标边长：有标题时贴右下角（宽裕 20px、紧凑 13px）；没有标题时居中，按块缩小到放得下。
+    /// </summary>
+    public double IconSize
+    {
+        get
+        {
+            if (IconAtCorner)
+            {
+                return IconBesideText ? 20 : 13;
+            }
+
+            double fit = Math.Min(Width, Height) - 6;
+            return Math.Clamp(fit, 4, 24);
+        }
+    }
+
+    /// <summary>图标水平对齐（有标题时靠右，否则居中）。</summary>
+    public System.Windows.HorizontalAlignment IconHorizontalAlignment
+        => IconAtCorner ? System.Windows.HorizontalAlignment.Right : System.Windows.HorizontalAlignment.Center;
+
+    /// <summary>图标垂直对齐（有标题时靠下，否则居中）。</summary>
+    public System.Windows.VerticalAlignment IconVerticalAlignment
+        => IconAtCorner ? System.Windows.VerticalAlignment.Bottom : System.Windows.VerticalAlignment.Center;
+
+    /// <summary>图标外边距（贴右下角时留边，居中时为 0）。</summary>
+    public System.Windows.Thickness IconMargin
+        => IconAtCorner
+            ? new System.Windows.Thickness(0, 0, IconBesideText ? 6 : 3, IconBesideText ? 5 : 3)
+            : new System.Windows.Thickness(0);
+
+    /// <summary>图标是否可见（只要有图标就显示，小到像素级也不隐藏）。</summary>
     public System.Windows.Visibility IconVisibility
-        => ShowIcon && Icon is not null ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        => Icon is not null ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
 
     /// <summary>应用图标（取不到时为 null，此时只显示文字）。</summary>
     public ImageSource? Icon
@@ -127,7 +166,9 @@ public sealed class TreemapTileViewModel : ObservableObject
             if (SetProperty(ref _icon, value))
             {
                 OnPropertyChanged(nameof(HasIcon));
+                OnPropertyChanged(nameof(ShowIcon));
                 OnPropertyChanged(nameof(IconVisibility));
+                OnPropertyChanged(nameof(IconSize));
             }
         }
     }

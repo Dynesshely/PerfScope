@@ -252,6 +252,15 @@ public sealed class AppRowViewModel : ObservableObject
             return;
         }
 
+        // 折叠的应用不需要逐帧刷新子进程：一次展开后下一帧会自然补上最新数据，
+        // 这样每帧少更新上千个行对象（168 应用 × 平均 6 个进程）
+        if (!IsExpanded)
+        {
+            OnPropertyChanged(nameof(HasChildren));
+            OnPropertyChanged(nameof(RowHeight));
+            return;
+        }
+
         // 子进程行按 PID 复用：只增删变化的部分，避免每次刷新都重建整棵可视化树
         var seen = new HashSet<int>();
         for (int i = 0; i < sample.Processes.Length; i++)

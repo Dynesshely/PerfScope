@@ -32,6 +32,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly UiState _state;
     private readonly Dictionary<string, AppRowViewModel> _rows = new(StringComparer.Ordinal);
 
+    // 每帧复用，避免为「本帧还活着哪些应用」反复分配 HashSet
+    private readonly HashSet<string> _seenScratch = new(StringComparer.Ordinal);
+    private readonly List<string> _staleScratch = new(32);
+
     private DateTime _lastUiUpdateUtc = DateTime.MinValue;
 
     // 性能诊断计数器（只在 PERFSCOPE_DIAG_ROWS=1 时读取，正常使用无副作用）
@@ -450,7 +454,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var settings = _host.Settings;
         bool preferPrivate = settings.MemoryMode == MemoryDisplay.PrivateWorkingSet;
         var visible = new List<AppRowViewModel>(frame.Apps.Length);
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var seen = _seenScratch;
+        seen.Clear();
 
         foreach (var sample in frame.Apps)
         {
@@ -478,8 +483,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // 清理本帧消失的应用行（避免进程退出后越积越多）
         if (_rows.Count > seen.Count)
         {
-            var stale = _rows.Keys.Where(key => !seen.Contains(key)).ToArray();
-            foreach (string key in stale)
+            _staleScratch.Clear();
+            foreach (string key in _rows.Keys)
+            {
+                if (!seen.Contains(key))
+                {
+                    _staleScratch.Add(key);
+                }
+            }
+
+            foreach (string key in _staleScratch)
             {
                 _rows.Remove(key);
             }
