@@ -79,6 +79,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _icons = icons ?? throw new ArgumentNullException(nameof(icons));
         _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
         _state = state ?? throw new ArgumentNullException(nameof(state));
+        Treemap = new TreemapPanelViewModel(_icons);
 
         _isTreemapVisible = state.TreemapVisible;
         _distributionTab = state.DistributionTab;
@@ -130,7 +131,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<AppRowViewModel> Apps { get; } = new();
 
     /// <summary>分布视图（树图）。</summary>
-    public TreemapPanelViewModel Treemap { get; } = new();
+    public TreemapPanelViewModel Treemap { get; }
 
     /// <summary>系统 CPU 趋势（最近 60 个采样点，百分比）。</summary>
     public TrendSeriesViewModel CpuTrend { get; } = new(60);

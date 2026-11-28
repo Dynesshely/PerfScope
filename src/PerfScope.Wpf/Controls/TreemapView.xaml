@@ -20,15 +20,22 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type vm:TreemapTileViewModel}">
                     <Border Background="{Binding Fill}" CornerRadius="3" Width="{Binding Width}" Height="{Binding Height}"
-                            Margin="1" ToolTip="{Binding ToolTipText}" SnapsToDevicePixels="True">
-                        <StackPanel Margin="7,4" VerticalAlignment="Top">
-                            <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TreemapText}"
-                                       FontSize="12" TextTrimming="CharacterEllipsis"
-                                       Visibility="{Binding ShowLabel, Converter={StaticResource BoolToVis}}"/>
-                            <TextBlock Text="{Binding ValueText}" Foreground="{DynamicResource TreemapSubText}"
-                                       FontSize="10.5" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"
-                                       Visibility="{Binding ShowValue, Converter={StaticResource BoolToVis}}"/>
-                        </StackPanel>
+                            Margin="1" ToolTip="{Binding ToolTipText}" SnapsToDevicePixels="True" ClipToBounds="True">
+                        <Grid>
+                            <StackPanel Margin="7,4" VerticalAlignment="Top" HorizontalAlignment="Left">
+                                <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TreemapText}"
+                                           FontSize="12" TextTrimming="CharacterEllipsis"
+                                           Visibility="{Binding ShowLabel, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding ValueText}" Foreground="{DynamicResource TreemapSubText}"
+                                           FontSize="10.5" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"
+                                           Visibility="{Binding ShowValue, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <!-- 应用图标：与旧版一致画在右下角，块太小就整体隐藏，避免压字 -->
+                            <Image Source="{Binding Icon}" Width="20" Height="20" Margin="0,0,6,5"
+                                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   Visibility="{Binding IconVisibility}"/>
+                        </Grid>
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

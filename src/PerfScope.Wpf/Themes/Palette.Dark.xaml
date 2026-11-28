@@ -23,6 +23,6 @@
     <Color x:Key="CaptionHoverBgColor">#1FFFFFFF</Color>
     <Color x:Key="CaptionHoverFgColor">#FFFFFF</Color>
     <Color x:Key="CaptionPressedBgColor">#12FFFFFF</Color>
-    <Color x:Key="TreemapTextColor">#F5F7FA</Color>
-    <Color x:Key="TreemapSubTextColor">#D5DBE3</Color>
+    <Color x:Key="TreemapTextColor">#EEF2F8</Color>
+    <Color x:Key="TreemapSubTextColor">#CDD6E2</Color>
 </ResourceDictionary>

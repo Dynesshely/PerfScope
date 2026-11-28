@@ -12,6 +12,7 @@ public sealed class TreemapTileViewModel : ObservableObject
     private double _height;
     private string _valueText = string.Empty;
     private Brush _fill = Brushes.Gray;
+    private ImageSource? _icon;
 
     /// <summary>创建矩形（只在首次出现该应用时调用）。</summary>
     public TreemapTileViewModel(string key, string displayName)
@@ -83,6 +84,8 @@ public sealed class TreemapTileViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(ShowLabel));
                 OnPropertyChanged(nameof(ShowValue));
+                OnPropertyChanged(nameof(ShowIcon));
+                OnPropertyChanged(nameof(IconVisibility));
             }
         }
     }
@@ -93,15 +96,44 @@ public sealed class TreemapTileViewModel : ObservableObject
     /// <summary>是否显示数值（更小的块只显示名字）。</summary>
     public bool ShowValue => Width >= 76 && Height >= 38;
 
+    /// <summary>是否显示应用图标（与旧版一致：块够大才画，避免压住文字）。</summary>
+    public bool ShowIcon => Width >= 72 && Height >= 52;
+
+    /// <summary>图标是否可见（块够大且确实拿到了图标）。</summary>
+    public System.Windows.Visibility IconVisibility
+        => ShowIcon && Icon is not null ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+
+    /// <summary>应用图标（取不到时为 null，此时只显示文字）。</summary>
+    public ImageSource? Icon
+    {
+        get => _icon;
+        private set
+        {
+            if (SetProperty(ref _icon, value))
+            {
+                OnPropertyChanged(nameof(HasIcon));
+                OnPropertyChanged(nameof(IconVisibility));
+            }
+        }
+    }
+
+    /// <summary>是否拿到了图标。</summary>
+    public bool HasIcon => Icon is not null;
+
     /// <summary>给 Border 用的边距（块之间留 1px 缝）。</summary>
     public System.Windows.Thickness Margin => new(X + 1, Y + 1, 0, 0);
 
     /// <summary>悬停提示文本。</summary>
     public string ToolTipText => DisplayName + Environment.NewLine + ValueText;
 
-    /// <summary>更新度量与颜色。</summary>
-    public void Update(string displayName, string valueText, Brush fill)
+    /// <summary>更新度量、颜色与图标（图标只在变化时才替换，避免每帧重建绑定）。</summary>
+    public void Update(string displayName, string valueText, Brush fill, ImageSource? icon)
     {
+        if (!ReferenceEquals(Icon, icon))
+        {
+            Icon = icon;
+        }
+
         if (!string.Equals(DisplayName, displayName, StringComparison.Ordinal))
         {
             DisplayName = displayName;

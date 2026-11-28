@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Media;
 using PerfScope.App.Infrastructure;
 using PerfScope.App.Mvvm;
+using PerfScope.App.Services;
 using PerfScope.Core.Analysis;
 using PerfScope.Core.Models;
 
@@ -27,6 +28,7 @@ public sealed class TreemapPanelViewModel : ObservableObject
 
     // 每个应用的颜色是稳定的：缓存起来，避免每秒为每个块重新 new 一个 SolidColorBrush
     private readonly Dictionary<string, Brush> _brushes = new(StringComparer.Ordinal);
+    private readonly IconService _icons;
     private TreemapMetric _metric = TreemapMetric.Memory;
     private double _panelWidth = 320;
     private double _panelHeight = 240;
@@ -34,6 +36,12 @@ public sealed class TreemapPanelViewModel : ObservableObject
     private TreemapTileViewModel? _hoveredTile;
     private bool _isDark = true;
     private bool _preferPrivateMemory;
+
+    /// <summary>创建分布视图 ViewModel（图标由 <see cref="IconService"/> 提供，与列表共用同一份缓存）。</summary>
+    public TreemapPanelViewModel(IconService icons)
+    {
+        _icons = icons ?? throw new ArgumentNullException(nameof(icons));
+    }
 
     /// <summary>当前矩形（按面积降序）。</summary>
     public ObservableCollection<TreemapTileViewModel> Tiles { get; } = new();
@@ -177,7 +185,9 @@ public sealed class TreemapPanelViewModel : ObservableObject
             string valueText = Metric == TreemapMetric.Memory
                 ? FormatUtil.Bytes(_preferPrivateMemory ? app.PrivateBytes : app.WorkingSetBytes)
                 : FormatUtil.Percent(app.CpuPercent);
-            tile.Update(app.DisplayName, valueText, GetBrush(rect.Key));
+            string displayName = Localization.Loc.T(app.DisplayName);
+            var icon = IsNeutral(rect.Key) ? null : _icons.GetIcon(app.IconSourcePath, app.DisplayName);
+            tile.Update(displayName, valueText, GetBrush(rect.Key), icon);
             tile.X = rect.X * _panelWidth;
             tile.Y = rect.Y * _panelHeight;
             tile.Width = Math.Max(0, rect.Width * _panelWidth);
@@ -201,7 +211,14 @@ public sealed class TreemapPanelViewModel : ObservableObject
         }
     }
 
-    /// <summary>取（或创建）应用对应的画笔。颜色按应用键稳定派生，缓存在 <see cref="_brushes"/> 里。</summary>
+    /// <summary>未归属 CPU 行用中性灰（与旧版一致，不参与调色板取样）。</summary>
+    private static bool IsNeutral(string key) => string.Equals(key, Core.Sampling.SnapshotComposer.UnattributedCpuKey, StringComparison.Ordinal);
+
+    /// <summary>
+    /// 取（或创建）方块画笔。配色沿用旧 WinForms 版：色相按 43° 步进取样、饱和度 0.30~0.34、
+    /// 深色主题明度 0.30 起、浅色主题明度 0.70 起 —— 目的就是"暗调、不刺眼"，
+    /// 同时保证块上的浅色/深色文字都够对比。
+    /// </summary>
     private Brush GetBrush(string key)
     {
         if (_brushes.TryGetValue(key, out var cached))
@@ -209,44 +226,80 @@ public sealed class TreemapPanelViewModel : ObservableObject
             return cached;
         }
 
-        int hash = 17;
-        foreach (char ch in key)
+        Color color;
+        if (IsNeutral(key))
         {
-            hash = unchecked(hash * 31 + ch);
+            color = _isDark ? Color.FromRgb(0x3E, 0x43, 0x4C) : Color.FromRgb(0xCE, 0xD2, 0xD8);
+        }
+        else
+        {
+            int hash = 17;
+            foreach (char ch in key)
+            {
+                hash = unchecked(hash * 31 + ch);
+            }
+
+            int index = hash & 0x7FFFFFFF;   // 避免 int.MinValue 取绝对值溢出
+            double hue = (index * 43 % 360) / 360.0;
+            color = _isDark
+                ? FromHsl(hue, 0.34, 0.30 + (index % 4) * 0.035)
+                : FromHsl(hue, 0.30, 0.70 + (index % 4) * 0.028);
         }
 
-        // 12 个等距色相，避免相邻块撞色；同一个应用在两种度量下颜色恒定
-        int index = Math.Abs(hash) % 12;
-        double hue = (index * 30.0 + (index >= 6 ? 15 : 0)) % 360;
-
-        // 深色主题用中等明度 + 较高饱和度（白字可读且不发灰）；浅色主题压暗一档
-        double lightness = _isDark ? 0.48 : 0.42;
-        var color = FromHsl(hue, _isDark ? 0.58 : 0.55, lightness);
         var brush = new SolidColorBrush(color);
         brush.Freeze();
         _brushes[key] = brush;
         return brush;
     }
 
+    /// <summary>HSL → RGB（hue 取 0~1，与旧版 Palette 的实现一致）。</summary>
     private static Color FromHsl(double hue, double saturation, double lightness)
     {
-        double c = (1 - Math.Abs((2 * lightness) - 1)) * saturation;
-        double x = c * (1 - Math.Abs((hue / 60 % 2) - 1));
-        double m = lightness - (c / 2);
-
-        (double r, double g, double b) = hue switch
+        double r = lightness;
+        double g = lightness;
+        double b = lightness;
+        if (saturation > 0)
         {
-            < 60 => (c, x, 0d),
-            < 120 => (x, c, 0d),
-            < 180 => (0d, c, x),
-            < 240 => (0d, x, c),
-            < 300 => (x, 0d, c),
-            _ => (c, 0d, x),
-        };
+            double q = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation;
+            double p = 2 * lightness - q;
+            r = HueToRgb(p, q, hue + (1.0 / 3));
+            g = HueToRgb(p, q, hue);
+            b = HueToRgb(p, q, hue - (1.0 / 3));
+        }
 
         return Color.FromRgb(
-            (byte)Math.Clamp((r + m) * 255, 0, 255),
-            (byte)Math.Clamp((g + m) * 255, 0, 255),
-            (byte)Math.Clamp((b + m) * 255, 0, 255));
+            (byte)Math.Clamp(r * 255, 0, 255),
+            (byte)Math.Clamp(g * 255, 0, 255),
+            (byte)Math.Clamp(b * 255, 0, 255));
+    }
+
+    private static double HueToRgb(double p, double q, double t)
+    {
+        if (t < 0)
+        {
+            t += 1;
+        }
+
+        if (t > 1)
+        {
+            t -= 1;
+        }
+
+        if (t < 1.0 / 6)
+        {
+            return p + ((q - p) * 6 * t);
+        }
+
+        if (t < 1.0 / 2)
+        {
+            return q;
+        }
+
+        if (t < 2.0 / 3)
+        {
+            return p + ((q - p) * ((2.0 / 3) - t) * 6);
+        }
+
+        return p;
     }
 }
