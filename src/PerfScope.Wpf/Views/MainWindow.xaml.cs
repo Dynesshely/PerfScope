@@ -36,6 +36,58 @@ public partial class MainWindow : ChromeWindow
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         VersionText.Text = AppVersionInfo.Display;
+
+        if (Environment.GetEnvironmentVariable("PERFSCOPE_DIAG_ROWS") == "1")
+        {
+            StartRowDiagnostics();
+        }
+    }
+
+    /// <summary>诊断：定期把「列表里已实例化的 ListBoxItem 数」写进临时日志，用于验证虚拟化是否生效。</summary>
+    private void StartRowDiagnostics()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "perfscope-ui-diag.log");
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        timer.Tick += (_, _) =>
+        {
+            try
+            {
+                int realized = CountVisuals<System.Windows.Controls.ListBoxItem>(AppList);
+                string extra = string.Empty;
+                if (_viewModel is not null)
+                {
+                    var (frames, rowsMs, treemapMs, posts) = _viewModel.DrainDiagnostics();
+                    extra = " frames=" + frames + " posts=" + posts
+                        + " rowsMs=" + rowsMs.ToString("F1") + " treemapMs=" + treemapMs.ToString("F1");
+                }
+
+                File.AppendAllText(path, DateTime.Now.ToString("HH:mm:ss") + " items=" + AppList.Items.Count
+                    + " realized=" + realized + extra + Environment.NewLine);
+            }
+            catch
+            {
+                // 诊断失败不影响主流程
+            }
+        };
+        timer.Start();
+    }
+
+    private static int CountVisuals<T>(System.Windows.DependencyObject root) where T : System.Windows.DependencyObject
+    {
+        int count = 0;
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T)
+            {
+                count++;
+            }
+
+            count += CountVisuals<T>(child);
+        }
+
+        return count;
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)

@@ -13,7 +13,7 @@ public sealed class HistoryRowViewModel
     /// <summary>从 Core 的摘要构造。</summary>
     public HistoryRowViewModel(DailyAppSummary summary)
     {
-        Name = summary.DisplayName;
+        Name = Localization.Loc.T(summary.DisplayName);
         CpuSecondsText = (summary.CpuPercentSeconds / 100d).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " s";
         PeakCpuText = FormatUtil.Percent(summary.PeakCpuPercent);
         PeakMemoryText = FormatUtil.Bytes(summary.PeakWorkingSetBytes);

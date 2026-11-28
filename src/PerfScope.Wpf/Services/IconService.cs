@@ -6,13 +6,21 @@ using System.Windows.Media.Imaging;
 namespace PerfScope.App.Services;
 
 /// <summary>
-/// 应用图标服务：按可执行文件路径取系统图标（SHGetFileInfo），拿不到时用首字母色块兜底。
-/// 缓存有上限，超过后整体清空重建，避免长期运行内存膨胀。
-/// 全部返回冻结过的 <see cref="ImageSource"/>，可跨线程安全使用。
+/// 应用图标服务：按可执行文件路径取系统图标（SHGetFileInfo → HICON → BitmapSource），
+/// 拿不到时用首字母色块兜底。
+/// <para>
+/// WPF 图片使用的几条硬性纪律（都是内存泄漏/句柄泄漏的高发点）：
+/// 1. 任何交给界面的 <see cref="ImageSource"/> 都必须 <c>Freeze()</c>，否则会与创建线程绑定；
+/// 2. 不得持有 <c>BitmapImage</c> + 文件流：本服务只从 HICON 转换，HICON 用完立刻 <c>DestroyIcon</c>；
+/// 3. <c>ImageSource</c> 不实现 IDisposable，所谓「释放」= 清掉强引用让 GC 回收像素缓冲，
+///    因此缓存必须有上限，不能按应用名无限增长；
+/// 4. 不要在每帧渲染路径上创建图片对象（本类只在新应用出现时命中一次）。
+/// </para>
 /// </summary>
 public sealed class IconService : IDisposable
 {
     private const int MaxCached = 512;
+    private const int MaxFallbackCached = 256;
     private const int IconSize = 20;
 
     private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
@@ -110,6 +118,12 @@ public sealed class IconService : IDisposable
         if (_fallbackCache.TryGetValue(key, out var cached))
         {
             return cached;
+        }
+
+        // 色块是按名字缓存的：上限一到就整体丢弃（像素缓冲由 GC 回收），避免长时间运行后无限增长
+        if (_fallbackCache.Count >= MaxFallbackCached)
+        {
+            _fallbackCache.Clear();
         }
 
         var image = DrawFallback(key);

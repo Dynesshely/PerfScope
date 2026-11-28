@@ -25,6 +25,7 @@ public sealed class AppRowViewModel : ObservableObject
     private ImageSource? _icon;
     private bool _isExpanded;
     private AppKind _kind;
+    private int _a11yTick;
 
     /// <summary>创建行（只在第一次见到该应用时调用）。</summary>
     public AppRowViewModel(string key)
@@ -231,7 +232,9 @@ public sealed class AppRowViewModel : ObservableObject
     /// <summary>按一帧里的应用数据刷新本行（复用子进程实例）。</summary>
     public void Update(AppSample sample, bool preferPrivateMemory)
     {
-        DisplayName = sample.DisplayName;
+        // Core 给的 DisplayName 可能是系统模块名（中文常量）：在 UI 层做一次本地化查表，
+        // 与旧 WinForms 版一致；普通应用名查不到条目时会原样返回
+        DisplayName = Localization.Loc.T(sample.DisplayName);
         Kind = sample.Kind;
         RootPath = sample.RootPath;
         Reason = sample.Reason;
@@ -243,6 +246,11 @@ public sealed class AppRowViewModel : ObservableObject
         ProcessCount = sample.ProcessCount;
         ReadBytesPerSecond = sample.ReadBytesPerSecond;
         WriteBytesPerSecond = sample.WriteBytesPerSecond;
+
+        if (UiDebug.DisableProcessRows)
+        {
+            return;
+        }
 
         // 子进程行按 PID 复用：只增删变化的部分，避免每次刷新都重建整棵可视化树
         var seen = new HashSet<int>();
@@ -281,9 +289,18 @@ public sealed class AppRowViewModel : ObservableObject
             }
         }
 
-        OnPropertyChanged(nameof(HasChildren));
-        OnPropertyChanged(nameof(RowHeight));
-        OnPropertyChanged(nameof(AccessibilityName));
-        OnPropertyChanged(nameof(AccessibilitySummary));
+        if (!UiDebug.DisableRowLayoutNotifications)
+        {
+            OnPropertyChanged(nameof(HasChildren));
+            OnPropertyChanged(nameof(RowHeight));
+        }
+
+        // 可访问性摘要是给屏幕阅读器的：CPU / 内存每秒都在变，但没必要每秒触发 UIA 属性变更，
+        // 每 5 帧（约 2~5 秒）刷新一次即可，既够用又显著减少 UIA 事件与字符串分配
+        if (!UiDebug.DisableUiaNotifications && (++_a11yTick % 5) == 0)
+        {
+            OnPropertyChanged(nameof(AccessibilityName));
+            OnPropertyChanged(nameof(AccessibilitySummary));
+        }
     }
 }

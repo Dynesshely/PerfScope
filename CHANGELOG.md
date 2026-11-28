@@ -63,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **修复列表虚拟化失效**：自定义 ListBox 模板补上 `CanContentScroll`，否则所有行都被实例化并每帧重排
+  （实测 TopN=30 时单核占用 16.7% → 修复后整机 0.32%）。
+- 分布视图改为增量更新（不再每秒 Clear/Add 瓷砖），画笔按应用键缓存。
+- 主题切换不再清空并重取所有应用图标；可访问性摘要改为每 5 帧通知一次，减少 UIA 事件。
+- 修复「权限受限」徽标的自赋值死代码，改为按是否提权判定；系统模块名恢复 UI 层本地化查表。
 - CHANGELOG 里「发行通道」条目被拆成两行的排版错误。
 
 ## [0.1.2] - 2026-11-02

@@ -30,4 +30,73 @@ internal static class UiDebug
 
     /// <summary>强制显示列表子项的悬停提示（仅截图 / 自动化验证用）。</summary>
     public static bool ForceListTooltip { get; set; }
+
+    // ===== 性能诊断开关（只用于定位"谁在空转"，正常使用永远全开）=====
+    // 用法：set PERFSCOPE_DISABLE_UI=list,treemap,trend,hover,icons 后启动，逐项排除。
+
+    /// <summary>关闭应用列表的逐帧刷新（保留头部指标）。</summary>
+    public static bool DisableListRefresh { get; private set; }
+
+    /// <summary>关闭分布视图（树图）刷新。</summary>
+    public static bool DisableTreemap { get; private set; }
+
+    /// <summary>关闭趋势曲线采样。</summary>
+    public static bool DisableTrend { get; private set; }
+
+    /// <summary>关闭窗口壳的 60ms 最大化键悬停轮询。</summary>
+    public static bool DisableHoverTimer { get; private set; }
+
+    /// <summary>关闭应用图标加载。</summary>
+    public static bool DisableIcons { get; private set; }
+
+    /// <summary>不再通知可访问性摘要（用于验证 UIA 绑定的成本）。</summary>
+    public static bool DisableUiaNotifications { get; private set; }
+
+    /// <summary>不再通知行高 / 子进程可见性（用于验证布局失效的成本）。</summary>
+    public static bool DisableRowLayoutNotifications { get; private set; }
+
+    /// <summary>不再逐帧更新子进程行（用于验证嵌套列表的成本）。</summary>
+    public static bool DisableProcessRows { get; private set; }
+
+    /// <summary>从环境变量解析诊断开关（启动时调用一次）。</summary>
+    public static void LoadDiagnosticSwitches()
+    {
+        string? value = Environment.GetEnvironmentVariable("PERFSCOPE_DISABLE_UI");
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        var parts = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (string part in parts)
+        {
+            switch (part.ToLowerInvariant())
+            {
+                case "list":
+                    DisableListRefresh = true;
+                    break;
+                case "treemap":
+                    DisableTreemap = true;
+                    break;
+                case "trend":
+                    DisableTrend = true;
+                    break;
+                case "hover":
+                    DisableHoverTimer = true;
+                    break;
+                case "icons":
+                    DisableIcons = true;
+                    break;
+                case "nouia":
+                    DisableUiaNotifications = true;
+                    break;
+                case "norowheight":
+                    DisableRowLayoutNotifications = true;
+                    break;
+                case "noprocess":
+                    DisableProcessRows = true;
+                    break;
+            }
+        }
+    }
 }

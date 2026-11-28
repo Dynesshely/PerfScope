@@ -194,6 +194,40 @@ VSTest testhost 启动时打开父进程句柄会被拒绝（`Win32Exception (5)
 
 `global.json` 原本锁 `10.0.402`，某次环境更新后本机不再有该 SDK。现在写的是 `10.0.100-rc.1.25451.107` + `rollForward: latestMajor`。换机器时先 `dotnet --list-sdks` 对齐。
 
+### 7.15 性能数字必须说清楚是「整机口径」还是「单核口径」
+
+这是本机踩过的坑：用 `Get-Process` 前后两次 `TotalProcessorTime` 相减算出来的百分比是
+**单核口径**（100% = 一个核跑满）；而 `check-perf.ps1` / `dotnet-counters` / App 自报的
+「自身 CPU」是**整机口径**（100% = 32 个核全满）。同一份数据两个口径差 32 倍，
+曾被误读成「CPU 15%，严重超标」，实际只有 0.3% 整机。
+
+| 工具 | 口径 |
+|---|---|
+| `Get-Process` 的 `TotalProcessorTime` 差值 / 墙钟时间 × 100 | 单核 |
+| `dotnet-counters` 的 `System.Runtime` → `CPU Usage (%)` | 整机 |
+| App 状态栏「自身开销」、`check-perf.ps1` | 整机 |
+
+2026-11-28 实测（WPF 版，mock 窗口 1900×1040、每秒刷新一帧）：整机 CPU 均值 **0.32%**、
+峰值 1.2%、分配速率 1.17 MB/s、句柄 810 稳定、工作集在修剪后 55~172 MB 波动。
+同一时刻按单核口径读出来是 8~16%，看起来吓人但并未超标。
+
+### 7.16 自定义 ListBox 模板会悄悄关掉虚拟化
+
+把 ListBox 的 `Template` 换成自己写的 `ScrollViewer + ItemsPresenter` 时，
+**必须在 ScrollViewer 上设 `CanContentScroll=True`**（或给 ListBox 加 `ScrollViewer.CanContentScroll` 设置器）。
+漏掉时 `IsVirtualizing` 虽然还是 true，但 VirtualizingStackPanel 会退化成物理滚动、
+所有行都会被实例化并跟着每帧重排：本机实测从 0.32% 整机涨到约 1%（单核口径 16%），
+TopN 越大越明显（TopN=6 → 8.9% 单核，TopN=30 → 16.7% 单核）。
+
+配套证据获取方法：`PERFSCOPE_DIAG_ROWS=1` 启动后，`%TEMP%\perfscope-ui-diag.log` 会每 2 秒
+记录 `items / realized / frames / rowsMs / treemapMs` —— realized 应远小于 items（滚动时），
+rowsMs 应该是 1~3 ms 量级。
+
+### 7.17 界面诊断开关（仅排障用，生产不设）
+
+环境变量 `PERFSCOPE_DISABLE_UI` 接受逗号分隔的取值：`list`、`treemap`、`trend`、`hover`、
+`icons`、`nouia`、`norowheight`、`noprocess`。逐个关掉再测 CPU，可以快速定位是哪个组件在烧。
+另有 `PERFSCOPE_DIAG_ROWS=1` 打开行实例化/耗时日志。两者都不影响正常使用。
 ### 7.13 文案分成三层，改文案时别放错层
 
 | 层 | 位置 | 机制 |

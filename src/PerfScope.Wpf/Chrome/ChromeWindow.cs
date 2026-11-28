@@ -152,7 +152,8 @@ namespace PerfScope.App.Chrome
 
         private void OnLoadedCore(object sender, RoutedEventArgs e)
         {
-            if (IsWindows11)
+            // 60ms 的光标轮询只服务 Win11 最大化键悬停，诊断时可整体关掉
+            if (IsWindows11 && !Infrastructure.UiDebug.DisableHoverTimer)
             {
                 _hoverTimer.Start();
             }

@@ -253,13 +253,17 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <!-- 自定义 ListBox 模板时必须显式打开 CanContentScroll，否则 VirtualizingStackPanel 退化成
+             物理滚动、虚拟化整体失效：所有行都会被实例化并每帧重排（实测 18% 单核、内存持续上涨） -->
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
         <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
         <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
         <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBox">
-                    <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
+                    <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}"
+                                  CanContentScroll="True">
                         <ItemsPresenter/>
                     </ScrollViewer>
                 </ControlTemplate>

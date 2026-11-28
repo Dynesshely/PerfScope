@@ -193,7 +193,7 @@
                         </Grid>
                     </Border>
 
-                    <ListBox Grid.Row="1" Style="{StaticResource AppListBox}" Margin="0,2,0,0"
+                    <ListBox x:Name="AppList" Grid.Row="1" Style="{StaticResource AppListBox}" Margin="0,2,0,0"
                              AutomationProperties.Name="{loc:Loc '应用列表'}"
                              ItemsSource="{Binding Apps}"
                              ItemContainerStyle="{StaticResource AppListBoxItem}"

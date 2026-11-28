@@ -40,6 +40,7 @@ internal static class WpfBootstrap
         var options = CommandLineOptions.Parse(args);
         options.ApplyDataDirectory();
         ApplyDebugSwitches(args);
+        UiDebug.LoadDiagnosticSwitches();
 
         bool demo = options.Demo || options.Mock;
 

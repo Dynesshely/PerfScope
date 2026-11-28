@@ -33,6 +33,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly Dictionary<string, AppRowViewModel> _rows = new(StringComparer.Ordinal);
 
     private DateTime _lastUiUpdateUtc = DateTime.MinValue;
+
+    // 性能诊断计数器（只在 PERFSCOPE_DIAG_ROWS=1 时读取，正常使用无副作用）
+    private long _diagFrames;
+    private long _diagUpdateRowsTicks;
+    private long _diagTreemapTicks;
+    private long _diagPosts;
+    private DateTime _lastReorderUtc = DateTime.MinValue;
+
+    /// <summary>列表重排的最小间隔：排序键每秒都在变，但 WPF 的集合增删会触发容器重建，
+    /// 所以只在必要时（每 3 秒或用户点列头）重排，其余帧只更新数值。</summary>
+    private static readonly TimeSpan ReorderInterval = TimeSpan.FromSeconds(3);
     private bool _isPaused;
     private bool _isTreemapVisible;
     private string _sortColumnName = "cpu";
@@ -49,6 +60,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasData;
     private bool _isPermissionLimited;
     private int _logicalProcessors = Environment.ProcessorCount;
+
+    // 权限是否受限：只用一次身份查询（每帧查 WindowsIdentity 太贵）
+    private readonly bool _elevated = Infrastructure.Elevation.IsElevated();
 
     /// <summary>创建主界面 ViewModel。</summary>
     public MainViewModel(
@@ -335,6 +349,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>诊断：读取并清零累计计数（返回 帧数, UpdateRows 毫秒, 树图毫秒, 投递次数）。</summary>
+    public (long Frames, double UpdateRowsMs, double TreemapMs, long Posts) DrainDiagnostics()
+    {
+        double tickMs = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        long frames = System.Threading.Interlocked.Exchange(ref _diagFrames, 0);
+        long rows = System.Threading.Interlocked.Exchange(ref _diagUpdateRowsTicks, 0);
+        long treemap = System.Threading.Interlocked.Exchange(ref _diagTreemapTicks, 0);
+        long posts = System.Threading.Interlocked.Exchange(ref _diagPosts, 0);
+        return (frames, rows * tickMs, treemap * tickMs, posts);
+    }
+
     /// <summary>保存界面状态（窗口关闭 / 隐藏时调用）。</summary>
     public void SaveState()
     {
@@ -356,16 +381,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void OnThemeChanged(object? sender, EventArgs e)
     {
+        // 只清首字母色块缓存（它们按主题着色）；真实 exe 图标与主题无关，保持不动，
+        // 否则下一帧会把整表图标重新取一遍（HICON → BitmapSource 的分配成本不为零）
         Treemap.SetTheme(_theme.IsDark);
         _icons.ClearFallbacks();
-        foreach (var row in _rows.Values)
-        {
-            row.Icon = null;
-        }
     }
 
     private void OnFrameProduced(object? sender, SnapshotFrame frame)
     {
+        System.Threading.Interlocked.Increment(ref _diagPosts);
+
         // 采样线程不能碰 UI：投递到 UI 线程；并按设置里的界面刷新间隔做节流
         _dispatcher.Post(() =>
         {
@@ -393,16 +418,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         IntervalText = FormatInterval(_host.EffectiveIntervalMs);
         LastUpdateText = frame.TimestampUtc.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.CurrentCulture);
         HasData = true;
-        IsPermissionLimited = !_host.Settings.ShowSelfUsage ? IsPermissionLimited : IsPermissionLimited;
+        // 非管理员时读不到受保护进程的路径与 CPU 时间，数字会偏小 —— 状态栏提示「权限受限」
+        IsPermissionLimited = !_elevated;
 
-        if (ShowSelfUsage)
+        if (!UiDebug.DisableTrend)
         {
             CpuTrend.Push(frame.SystemCpuPercent);
             MemoryTrend.Push(frame.SystemMemoryPercent);
         }
 
-        UpdateRows(frame);
-        Treemap.Update(frame.Apps);
+        System.Threading.Interlocked.Increment(ref _diagFrames);
+
+        if (!UiDebug.DisableListRefresh)
+        {
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            UpdateRows(frame);
+            System.Threading.Interlocked.Add(ref _diagUpdateRowsTicks, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+        }
+
+        if (!UiDebug.DisableTreemap)
+        {
+            long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            Treemap.Update(frame.Apps);
+            System.Threading.Interlocked.Add(ref _diagTreemapTicks, System.Diagnostics.Stopwatch.GetTimestamp() - t1);
+        }
     }
 
     private void UpdateRows(SnapshotFrame frame)
@@ -426,7 +465,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             row.Update(sample, preferPrivate);
-            if (row.Icon is null)
+            if (row.Icon is null && !UiDebug.DisableIcons)
             {
                 row.Icon = _icons.GetIcon(sample.IconSourcePath, sample.DisplayName);
             }
@@ -445,14 +484,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
 
-        SortRows(visible);
         int limit = Math.Clamp(settings.TopN, 5, 200);
-        if (visible.Count > limit)
+
+        // 排序节流：不到重排时间就沿用当前顺序，只把数值刷新到已有行上
+        bool reorder = (DateTime.UtcNow - _lastReorderUtc) >= ReorderInterval;
+        if (reorder)
         {
-            visible.RemoveRange(limit, visible.Count - limit);
+            _lastReorderUtc = DateTime.UtcNow;
+            SortRows(visible);
+            if (visible.Count > limit)
+            {
+                visible.RemoveRange(limit, visible.Count - limit);
+            }
+
+            Synchronize(Apps, visible);
+            return;
         }
 
-        Synchronize(Apps, visible);
+        // 不重排：数值已经在上面原地更新过了，集合结构保持不变（WPF 不重建行容器）。
+        // 行数裁剪留到下一次重排统一处理，最多滞后一个 ReorderInterval。
     }
 
     private void SortRows(List<AppRowViewModel> rows)

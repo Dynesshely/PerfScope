@@ -24,6 +24,9 @@ public enum TreemapMetric
 public sealed class TreemapPanelViewModel : ObservableObject
 {
     private readonly Dictionary<string, TreemapTileViewModel> _tiles = new(StringComparer.Ordinal);
+
+    // 每个应用的颜色是稳定的：缓存起来，避免每秒为每个块重新 new 一个 SolidColorBrush
+    private readonly Dictionary<string, Brush> _brushes = new(StringComparer.Ordinal);
     private TreemapMetric _metric = TreemapMetric.Memory;
     private double _panelWidth = 320;
     private double _panelHeight = 240;
@@ -88,6 +91,7 @@ public sealed class TreemapPanelViewModel : ObservableObject
         }
 
         _isDark = dark;
+        _brushes.Clear();
         Rebuild();
     }
 
@@ -157,29 +161,39 @@ public sealed class TreemapPanelViewModel : ObservableObject
             }
         }
 
-        // 按布局顺序重建可见集合（顺序变化时视图会重排）
-        var ordered = new List<TreemapTileViewModel>(rects.Count);
+        // 增量同步：已存在的块只改坐标与数值，新块直接追加。
+        // 矩形之间不重叠，所以 Canvas 的子元素顺序不影响观感，不需要每秒 Clear + Add
+        // （那会让 ItemsControl 每次重建整棵可视化树）。
         foreach (var rect in rects)
         {
             if (!_tiles.TryGetValue(rect.Key, out var tile))
             {
                 tile = new TreemapTileViewModel(rect.Key, byKey[rect.Key].DisplayName);
                 _tiles[rect.Key] = tile;
+                Tiles.Add(tile);
             }
 
             var app = byKey[rect.Key];
             string valueText = Metric == TreemapMetric.Memory
                 ? FormatUtil.Bytes(_preferPrivateMemory ? app.PrivateBytes : app.WorkingSetBytes)
                 : FormatUtil.Percent(app.CpuPercent);
-            tile.Update(app.DisplayName, valueText, CreateBrush(rect.Key));
+            tile.Update(app.DisplayName, valueText, GetBrush(rect.Key));
             tile.X = rect.X * _panelWidth;
             tile.Y = rect.Y * _panelHeight;
             tile.Width = Math.Max(0, rect.Width * _panelWidth);
             tile.Height = Math.Max(0, rect.Height * _panelHeight);
-            ordered.Add(tile);
         }
 
-        SynchronizeTiles(ordered);
+        // 清掉已消失的应用对应的画笔缓存，避免长期运行后越积越多
+        if (_brushes.Count > (_tiles.Count * 2) + 32)
+        {
+            var aliveKeys = new HashSet<string>(_tiles.Keys, StringComparer.Ordinal);
+            var stale = _brushes.Keys.Where(k => !aliveKeys.Contains(k)).ToArray();
+            foreach (var key in stale)
+            {
+                _brushes.Remove(key);
+            }
+        }
         OnPropertyChanged(nameof(IsEmpty));
         if (HoveredTile is not null && !alive.Contains(HoveredTile.Key))
         {
@@ -187,36 +201,14 @@ public sealed class TreemapPanelViewModel : ObservableObject
         }
     }
 
-    private void SynchronizeTiles(List<TreemapTileViewModel> ordered)
+    /// <summary>取（或创建）应用对应的画笔。颜色按应用键稳定派生，缓存在 <see cref="_brushes"/> 里。</summary>
+    private Brush GetBrush(string key)
     {
-        if (Tiles.Count == ordered.Count)
+        if (_brushes.TryGetValue(key, out var cached))
         {
-            bool same = true;
-            for (int i = 0; i < ordered.Count; i++)
-            {
-                if (!ReferenceEquals(Tiles[i], ordered[i]))
-                {
-                    same = false;
-                    break;
-                }
-            }
-
-            if (same)
-            {
-                return;
-            }
+            return cached;
         }
 
-        Tiles.Clear();
-        foreach (var tile in ordered)
-        {
-            Tiles.Add(tile);
-        }
-    }
-
-    /// <summary>按应用键稳定派生颜色：同一个应用在内存 / CPU 视图下颜色一致。</summary>
-    private Brush CreateBrush(string key)
-    {
         int hash = 17;
         foreach (char ch in key)
         {
@@ -232,6 +224,7 @@ public sealed class TreemapPanelViewModel : ObservableObject
         var color = FromHsl(hue, _isDark ? 0.58 : 0.55, lightness);
         var brush = new SolidColorBrush(color);
         brush.Freeze();
+        _brushes[key] = brush;
         return brush;
     }
 
