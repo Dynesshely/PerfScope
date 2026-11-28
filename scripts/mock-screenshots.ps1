@@ -17,7 +17,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $data = Join-Path $root 'artifacts\mock-run'
-$exe = Join-Path $root 'src\PerfScope.App\bin\Debug\net10.0-windows\PerfScope.exe'
+$exe = Join-Path $root 'src\PerfScope.Wpf\bin\Debug\net10.0-windows\PerfScope.exe'
 $images = Join-Path $root 'docs\images'
 New-Item -ItemType Directory -Force $images | Out-Null
 New-Item -ItemType Directory -Force $data | Out-Null
@@ -85,7 +85,7 @@ function Find-Window {
 
 Write-Host '==> 构建 Debug' -ForegroundColor Cyan
 Push-Location $root
-try { dotnet build src/PerfScope.App -c Debug --nologo | Out-Host } finally { Pop-Location }
+try { dotnet build src/PerfScope.Wpf -c Debug --nologo | Out-Host } finally { Pop-Location }
 
 Write-Host '==> 截图：内存分布' -ForegroundColor Cyan
 Start-Mock -Tab 0 -OutFile (Join-Path $images 'screenshot-main.png')

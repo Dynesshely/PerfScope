@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $cfg = if ($DebugBuild) { 'Debug' } else { 'Release' }
-$exe = Join-Path $root "src\PerfScope.App\bin\$cfg\net10.0-windows\PerfScope.exe"
+$exe = Join-Path $root "src\PerfScope.Wpf\bin\$cfg\net10.0-windows\PerfScope.exe"
 if (-not (Test-Path $exe)) {
     $exe = Join-Path $root 'dist\PerfScope.exe'
 }

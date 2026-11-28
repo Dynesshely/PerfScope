@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- WPF 的 XAML 编译会生成 _wpftmp 临时工程，它不继承 Directory.Build.props 的隐式 using，必须显式打开 -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PerfScope.App</RootNamespace>
+    <AssemblyName>PerfScope</AssemblyName>
+    <!-- App.xaml 会生成一个 Main，这里显式指定引导流程为入口 -->
+    <StartupObject>PerfScope.App.Wpf.WpfBootstrap</StartupObject>
+    <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Product>PerfScope</Product>
+    <AssemblyTitle>PerfScope 应用级资源监控</AssemblyTitle>
+    <Description>轻量常驻的 CPU / 内存监控工具，按应用聚合进程占用</Description>
+    <Company>PerfScope</Company>
+    <Version>0.2.0</Version>
+    <Copyright>Copyright © 2026</Copyright>
+    <SelfContained>false</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 窗口 / 任务栏 / 托盘 / 对话框共用的图标：既要程序集资源也要内嵌资源 -->
+    <Resource Include="Assets\app.ico" />
+    <EmbeddedResource Include="Assets\app.ico" LogicalName="PerfScope.App.app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PerfScope.Core\PerfScope.Core.csproj" />
+  </ItemGroup>
+</Project>

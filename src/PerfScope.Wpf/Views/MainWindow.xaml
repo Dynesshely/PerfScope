@@ -1,0 +1,323 @@
+<chrome:ChromeWindow x:Class="PerfScope.App.Views.MainWindow"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:chrome="clr-namespace:PerfScope.App.Chrome"
+                      xmlns:vm="clr-namespace:PerfScope.App.ViewModels"
+                      xmlns:controls="clr-namespace:PerfScope.App.Controls"
+                      Title="PerfScope — 应用级 CPU / 内存监控"
+                      Height="820" Width="1320" MinWidth="960" MinHeight="560"
+                      WindowStartupLocation="CenterScreen"
+                      Icon="pack://application:,,,/Assets/app.ico"
+                      d:DesignWidth="1320" d:DesignHeight="820"
+                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                      mc:Ignorable="d">
+
+    <!-- 自定义标题栏内容：把版本号与关键状态放进标题栏，和系统三大金刚键共存 -->
+    <chrome:ChromeWindow.HeaderContent>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="PerfScope" FontSize="12.5" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+            <Border Background="{DynamicResource AccentSoft}" CornerRadius="3" Padding="6,1" Margin="10,0,0,0"
+                    VerticalAlignment="Center">
+                <TextBlock x:Name="VersionText" Text="v0.1.4" FontSize="10.5"
+                           Foreground="{DynamicResource TextSecondary}"/>
+            </Border>
+            <Border Background="{DynamicResource Warning}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding IsPaused, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding PauseText}" FontSize="10.5" Foreground="#1B1F24"/>
+            </Border>
+            <Border Background="{DynamicResource Danger}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding IsPermissionLimited, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="权限受限" FontSize="10.5" Foreground="#FFFFFF"/>
+            </Border>
+        </StackPanel>
+    </chrome:ChromeWindow.HeaderContent>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ===== 顶部系统指标 ===== -->
+        <Grid Grid.Row="0" Margin="14,12,14,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                <StackPanel>
+                    <TextBlock Text="整机 CPU" Style="{StaticResource MutedText}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding SystemCpuText}" FontSize="{DynamicResource BigNumberFontSize}"
+                                   FontWeight="Bold" Foreground="{DynamicResource CpuLine}" Margin="0,2,0,0"
+                                   VerticalAlignment="Center"/>
+                        <controls:TrendChart Series="{Binding CpuTrend}" LineBrush="{DynamicResource CpuLine}"
+                                             Height="38" Width="150" Margin="12,0,0,0" VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0">
+                <StackPanel>
+                    <TextBlock Text="内存" Style="{StaticResource MutedText}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding SystemMemoryText}" FontSize="{DynamicResource BigNumberFontSize}"
+                                   FontWeight="Bold" Foreground="{DynamicResource MemoryLine}" Margin="0,2,0,0"
+                                   VerticalAlignment="Center"/>
+                        <controls:TrendChart Series="{Binding MemoryTrend}" LineBrush="{DynamicResource MemoryLine}"
+                                             Height="38" Width="150" Margin="12,0,0,0" VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding MemoryDetailText}" Style="{StaticResource MutedText}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="进程 / 应用" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{Binding ProcessCountText}" FontSize="{DynamicResource BigNumberFontSize}"
+                               FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,2,0,0"/>
+                    <TextBlock Text="{Binding IntervalText}" Style="{StaticResource MutedText}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="3" Margin="14,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding LastUpdateText}" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource TextSecondary}" FontSize="{DynamicResource SmallFontSize}"/>
+                <TextBlock Text="{Binding SelfUsageText}" HorizontalAlignment="Right" Margin="0,2,0,0"
+                           Foreground="{DynamicResource TextMuted}" FontSize="{DynamicResource SmallFontSize}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ===== 工具条 ===== -->
+        <Border Grid.Row="1" Background="{DynamicResource HeaderBg}" BorderBrush="{DynamicResource Border}"
+                BorderThickness="0,1,0,1" Padding="8,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding TogglePauseCommand}"
+                            ToolTip="暂停 / 继续监控（F6）">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding PauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PauseText}" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding RefreshNowCommand}"
+                            ToolTip="立即采样（F5）">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock Text="刷新" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Border Width="1" Background="{DynamicResource Border}" Margin="6,6"/>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleTreemapCommand}"
+                            ToolTip="显示 / 隐藏分布视图（Ctrl+Shift+D）">
+                        <TextBlock Text="分布视图"/>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenHistoryCommand}" ToolTip="历史（Ctrl+H）">
+                        <TextBlock Text="历史"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenAgentCommand}" ToolTip="接入 Agent（Ctrl+Shift+A）">
+                        <TextBlock Text="接入 Agent"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenSettingsCommand}" ToolTip="设置（Ctrl+,）">
+                        <TextBlock Text="设置"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenAboutCommand}" ToolTip="关于">
+                        <TextBlock Text="关于"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 主体：应用列表 + 分布视图 ===== -->
+        <Grid Grid.Row="2" Margin="14,10,14,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.6*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="{Binding TreemapColumnWidth}"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 应用列表 -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 列头：整块可点击排序 -->
+                    <Border Grid.Row="0" Background="{DynamicResource HeaderBg}" CornerRadius="8,8,0,0"
+                            BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1">
+                        <Grid Height="30" Margin="8,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="88"/>
+                                <ColumnDefinition Width="96"/>
+                                <ColumnDefinition Width="64"/>
+                                <ColumnDefinition Width="150"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Style="{StaticResource ToolButton}" HorizontalAlignment="Left"
+                                    Command="{Binding SortByCommand}" CommandParameter="name"
+                                    Content="{Binding NameHeaderText}"/>
+                            <Button Grid.Column="1" Style="{StaticResource ToolButton}" HorizontalAlignment="Right"
+                                    Command="{Binding SortByCommand}" CommandParameter="cpu"
+                                    Content="{Binding CpuHeaderText}"/>
+                            <Button Grid.Column="2" Style="{StaticResource ToolButton}" HorizontalAlignment="Right"
+                                    Command="{Binding SortByCommand}" CommandParameter="memory"
+                                    Content="{Binding MemoryHeaderText}"/>
+                            <Button Grid.Column="3" Style="{StaticResource ToolButton}" HorizontalAlignment="Right"
+                                    Command="{Binding SortByCommand}" CommandParameter="process"
+                                    Content="{Binding ProcessHeaderText}"/>
+                            <Button Grid.Column="4" Style="{StaticResource ToolButton}" HorizontalAlignment="Right"
+                                    Command="{Binding SortByCommand}" CommandParameter="io"
+                                    Content="{Binding IoHeaderText}"/>
+                        </Grid>
+                    </Border>
+
+                    <ListBox Grid.Row="1" Style="{StaticResource AppListBox}" Margin="0,2,0,0"
+                             ItemsSource="{Binding Apps}"
+                             ItemContainerStyle="{StaticResource AppListBoxItem}"
+                             ScrollViewer.CanContentScroll="True">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AppRowViewModel}">
+                                <StackPanel>
+                                    <!-- 主行 -->
+                                    <Grid Height="34" Margin="8,0" Background="Transparent"
+                                          ToolTip="{Binding ToolTipText}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="88"/>
+                                            <ColumnDefinition Width="96"/>
+                                            <ColumnDefinition Width="64"/>
+                                            <ColumnDefinition Width="150"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Style="{StaticResource ToolButton}" Padding="2"
+                                                    Command="{Binding ToggleExpandCommand}" Cursor="Hand"
+                                                    AutomationProperties.Name="{Binding DisplayName}">
+                                                <TextBlock Text="{Binding ExpandGlyph}" FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                                            </Button>
+                                            <Image Source="{Binding Icon}" Width="20" Height="20" Margin="4,0,9,0"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                            <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TextPrimary}"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1" Text="{Binding CpuText}" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding MemoryText}" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding ProcessCountText}" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding IoText}" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"
+                                                   FontSize="{DynamicResource SmallFontSize}"/>
+                                    </Grid>
+
+                                    <!-- 展开的子进程 -->
+                                    <ItemsControl ItemsSource="{Binding Processes}" Margin="46,0,0,4"
+                                                  Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:ProcessRowViewModel}">
+                                                <Grid Height="22" Margin="0,0,8,0" ToolTip="{Binding ToolTipText}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="88"/>
+                                                        <ColumnDefinition Width="96"/>
+                                                        <ColumnDefinition Width="64"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                                               Foreground="{DynamicResource TextMuted}"
+                                                               FontSize="{DynamicResource SmallFontSize}"
+                                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding CpuText}" HorizontalAlignment="Right"
+                                                               Foreground="{DynamicResource TextMuted}"
+                                                               FontSize="{DynamicResource SmallFontSize}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding MemoryText}" HorizontalAlignment="Right"
+                                                               Foreground="{DynamicResource TextMuted}"
+                                                               FontSize="{DynamicResource SmallFontSize}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding Pid}" HorizontalAlignment="Right"
+                                                               Foreground="{DynamicResource TextMuted}"
+                                                               FontSize="{DynamicResource SmallFontSize}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- 空状态 -->
+                    <TextBlock Grid.Row="1" Text="正在等待第一帧采样数据…" HorizontalAlignment="Center"
+                               VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"
+                               Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"/>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent"
+                          ResizeBehavior="PreviousAndNext"/>
+
+            <!-- 分布视图（树图） -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock Text="分布视图" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ToggleButton Style="{StaticResource SegmentToggle}" Content="内存"
+                                          IsChecked="{Binding IsMemoryTab, Mode=OneWay}"
+                                          Command="{Binding ShowMemoryTabCommand}"/>
+                            <ToggleButton Style="{StaticResource SegmentToggle}" Content="CPU" Margin="4,0,0,0"
+                                          IsChecked="{Binding IsCpuTab, Mode=OneWay}"
+                                          Command="{Binding ShowCpuTabCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceAlt}" CornerRadius="6" Padding="2">
+                        <controls:TreemapView DataContext="{Binding Treemap}"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ===== 状态栏 ===== -->
+        <Border Grid.Row="3" Background="{DynamicResource HeaderBg}" BorderBrush="{DynamicResource Border}"
+                BorderThickness="0,1,0,0" Padding="12,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondary}"
+                           FontSize="{DynamicResource SmallFontSize}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding SelfUsageText}" Foreground="{DynamicResource TextMuted}"
+                           FontSize="{DynamicResource SmallFontSize}" VerticalAlignment="Center"
+                           Visibility="{Binding ShowSelfUsage, Converter={StaticResource BoolToVis}}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</chrome:ChromeWindow>

@@ -15,14 +15,14 @@ all welcome.
 git clone https://github.com/Dynesshely/PerfScope.git
 cd PerfScope
 dotnet build -c Debug          # must be 0 warnings, 0 errors
-dotnet run --project src/PerfScope.App
+dotnet run --project src/PerfScope.Wpf
 ```
 
 Settings and history live in `%LOCALAPPDATA%\PerfScope`. For experiments use a separate data directory so you
 never touch your real data:
 
 ```powershell
-dotnet run --project src/PerfScope.App -- --data-dir .\artifacts\dev-run
+dotnet run --project src/PerfScope.Wpf -- --data-dir .\artifacts\dev-run
 ```
 
 `--mock` runs the UI against synthetic data (this is how the screenshots are produced) and never reads real
@@ -50,7 +50,7 @@ works on your machine you may use it, but make sure the script still passes.
 - Sampling must go through `NtQuerySystemInformation(SystemProcessInformation)`; no WMI, PerformanceCounter or
   per-process `System.Diagnostics.Process` polling.
 - User-facing strings are written in Chinese in source, where they double as resource keys; English lives in
-  `src/PerfScope.App/Localization/Strings.en.resx`. Add a translation for every new string — missing entries fall
+  `src/PerfScope.Wpf/Localization/Strings.en.resx`. Add a translation for every new string — missing entries fall
   back to Chinese. Code comments and log messages stay in Chinese.
 - Frozen contract files are listed in `docs/CONTRACTS.md` — coordinate before changing them.
 - New behaviour needs tests in `tests/PerfScope.Tests`; keep the whole suite green.
@@ -101,7 +101,7 @@ installs NSIS and builds the installer. To reproduce a release locally:
 Release checklist for maintainers:
 
 1. Update `CHANGELOG.md` (move *Unreleased* entries into the new version section).
-2. Bump `<Version>` in `src/PerfScope.App/PerfScope.App.csproj`.
+2. Bump `<Version>` in `src/PerfScope.Wpf/PerfScope.Wpf.csproj`.
 3. Commit, then tag `vX.Y.Z` and push the tag. The tag drives the assembly version and the release.
 
 ## Security

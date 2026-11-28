@@ -15,10 +15,15 @@ PerfScope 的目标不是`功能最多的监控器`，而是**能真的赖在后
 
 ## 2. 分层
 
-    PerfScope.App (WinForms)
-      ├─ TrayAppContext      托盘常驻、单实例、开机启动、告警气泡
-      ├─ MainForm            应用级列表、趋势线、展开进程明细
-      └─ SettingsForm        全参数设置页（分组 Tab + 校验 + 热生效）
+    PerfScope.Wpf (WPF + MVVM)
+      ├─ Views/              纯声明式 XAML：主窗口、设置、历史、关于、接入 Agent、引导
+      ├─ ViewModels/         MainViewModel / SettingsViewModel / TreemapPanelViewModel …
+      │                      —— 数据装配、排序、节流、树图几何全在这里，视图零业务逻辑
+      ├─ Services/           ShellController（托盘/窗口/关闭到托盘）、DialogService、
+      │                      ThemeService、IconService、NotificationCoordinator、TrayService
+      ├─ Controls/           TrendChart（OnRender 折线）、TreemapView（Canvas 绑定像素矩形）
+      ├─ Chrome/             WPF 窗口壳（自绘标题栏 + Snap Layouts + 原生窗口动画）
+      └─ Themes/             三套调色板 + 控件样式（DynamicResource，换主题即时生效）
              │ 只依赖接口
     PerfScope.Core
       ├─ Abstractions        ICapture / IAppClassifier / ISnapshotComposer / IMonitorEngine
@@ -30,7 +35,12 @@ PerfScope 的目标不是`功能最多的监控器`，而是**能真的赖在后
       ├─ Settings            设置模型、校验、原子读写
       └─ Diagnostics         轻量文件日志（轮转）
 
-依赖方向单向：App -> Core，Core 内部不反向依赖 UI；Core 不引用 WinForms。
+依赖方向单向：Wpf -> Core，Core 内部不反向依赖 UI；Core 不引用 WPF/WinForms。
+
+MVVM 纪律：视图（XAML + 极薄的 code-behind）不认识 Core；ViewModel 不认识 WPF 窗口；
+需要弹窗 / 托盘 / 主题切换时通过 `IDialogService`、`IUiDispatcher`、`ThemeService` 注入。
+数据驱动的落点：树图布局算法在 `PerfScope.Core.Analysis.TreemapLayout`（可单测），
+ViewModel 把它算成像素矩形，`TreemapView` 只做 ItemsControl 绑定。
 
 ## 3. 采样：为什么便宜
 

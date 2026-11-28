@@ -176,7 +176,7 @@ git clone https://github.com/Dynesshely/PerfScope.git
 cd PerfScope
 
 dotnet build -c Debug                    # build everything
-dotnet run --project src/PerfScope.App   # run the app
+dotnet run --project src/PerfScope.Wpf   # run the app
 
 .\scripts\run-tests.ps1                  # run the test suite
 .\scripts\build.ps1 -Publish             # produce dist\PerfScope.exe
@@ -185,7 +185,7 @@ dotnet run --project src/PerfScope.App   # run the app
 **Mock mode** — the UI can run on entirely synthetic data, which is how the screenshots above are produced and a convenient way to work on layout without any real workload:
 
 ~~~powershell
-dotnet run --project src/PerfScope.App -- --mock
+dotnet run --project src/PerfScope.Wpf -- --mock
 .\scripts\mock-screenshots.ps1           # regenerate docs/images from mock data
 ~~~
 
@@ -245,7 +245,7 @@ path behaviour, winget manifest validation, release pipeline).
 PerfScope/
 ├─ src/
 │  ├─ PerfScope.Core/        # sampling, application grouping, history, insights, settings
-│  └─ PerfScope.App/         # WinForms shell: main window, controls, forms, theming
+│  └─ PerfScope.Wpf/         # WPF shell (MVVM): chrome window, views, viewmodels, controls, themes
 ├─ tools/
 │  └─ PerfScope.Cli/         # headless helper: frames, JSON output, reports, benchmarks
 ├─ tests/

@@ -4,7 +4,7 @@
 
 **每一轮对话结束时，都必须让 dev 版保持运行，供用户验收效果。**
 
-- "dev 版"指 Debug 构建：`src\PerfScope.App\bin\Debug\net10.0-windows\PerfScope.exe`。
+- "dev 版"指 Debug 构建：`src\PerfScope.Wpf\bin\Debug\net10.0-windows\PerfScope.exe`。
 - 每轮收尾时若没有存活的 PerfScope 实例，必须启动一个；若现有实例是改动前的旧代码，先结束进程、重新构建、再启动。
 - 启动前先清理旧实例（程序有单实例互斥，否则新实例会静默退出）：
 

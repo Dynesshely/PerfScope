@@ -21,9 +21,9 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $ExePath) {
     $candidates = @(
-        (Join-Path $root 'src\PerfScope.App\bin\Release\net10.0-windows\PerfScope.exe'),
+        (Join-Path $root 'src\PerfScope.Wpf\bin\Release\net10.0-windows\PerfScope.exe'),
         (Join-Path $root 'dist\PerfScope.exe'),
-        (Join-Path $root 'src\PerfScope.App\bin\Debug\net10.0-windows\PerfScope.exe')
+        (Join-Path $root 'src\PerfScope.Wpf\bin\Debug\net10.0-windows\PerfScope.exe')
     )
     $ExePath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 }

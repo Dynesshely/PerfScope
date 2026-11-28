@@ -20,7 +20,7 @@ RequestExecutionLevel admin
   !define OUTPUT_FILE "PerfScope-Setup-${APP_VERSION}-win-x64.exe"
 !endif
 !ifndef ICON_FILE
-  !define ICON_FILE "..\src\PerfScope.App\Assets\app.ico"
+  !define ICON_FILE "..\src\PerfScope.Wpf\Assets\app.ico"
 !endif
 
 !define APP_NAME "PerfScope"

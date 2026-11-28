@@ -39,7 +39,7 @@ try {
 
         if (Test-Path -LiteralPath $resolvedDist) { Remove-Item -LiteralPath $resolvedDist -Recurse -Force }
         $publishArgs = @(
-            'publish', 'src\PerfScope.App\PerfScope.App.csproj',
+            'publish', 'src\PerfScope.Wpf\PerfScope.Wpf.csproj',
             '-c', 'Release', '-r', 'win-x64', '--self-contained', 'false',
             '-p:PublishSingleFile=true', '-p:IncludeNativeLibrariesForSelfExtract=true',
             '-p:DebugType=none', '-o', $dist, '--nologo'

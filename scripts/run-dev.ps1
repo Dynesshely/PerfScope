@@ -58,7 +58,7 @@ foreach ($dir in @($bin, $cliDir)) {
     New-Item -ItemType Directory -Force $dir | Out-Null
 }
 
-Copy-Item -Path (Join-Path $root 'src\PerfScope.App\bin\Debug\net10.0-windows\*') -Destination $bin -Recurse -Force
+Copy-Item -Path (Join-Path $root 'src\PerfScope.Wpf\bin\Debug\net10.0-windows\*') -Destination $bin -Recurse -Force
 Copy-Item -Path (Join-Path $root 'tools\PerfScope.Cli\bin\Debug\net10.0-windows\*') -Destination $cliDir -Recurse -Force
 
 $data = Join-Path $root 'artifacts\dev-run'

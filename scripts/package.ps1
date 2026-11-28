@@ -57,7 +57,7 @@ try {
         New-Item -ItemType Directory -Force -Path $full | Out-Null
     }
 
-    dotnet publish 'src\PerfScope.App\PerfScope.App.csproj' -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -p:Version=$cleanVersion -p:AssemblyVersion=$cleanVersion -p:FileVersion=$cleanVersion -o $publishDir --nologo
+    dotnet publish 'src\PerfScope.Wpf\PerfScope.Wpf.csproj' -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -p:Version=$cleanVersion -p:AssemblyVersion=$cleanVersion -p:FileVersion=$cleanVersion -o $publishDir --nologo
     if ($LASTEXITCODE -ne 0) { throw "发布失败（exit $LASTEXITCODE）" }
 
     $exe = Join-Path $publishDir 'PerfScope.exe'
@@ -90,7 +90,7 @@ try {
         }
 
         Write-Host "==> 构建安装包（$makensis）" -ForegroundColor Cyan
-        $icon = Join-Path $root 'src\PerfScope.App\Assets\app.ico'
+        $icon = Join-Path $root 'src\PerfScope.Wpf\Assets\app.ico'
         & $makensis "/DAPP_VERSION=$cleanVersion" "/DAPP_VERSION_NUMERIC=$numericVersion" "/DSOURCE_DIR=$publishDir" "/DOUTPUT_FILE=$installerPath" "/DICON_FILE=$icon" (Join-Path $root 'installer\PerfScope.nsi') | Out-Host
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $installerPath)) { throw "安装包构建失败（exit $LASTEXITCODE）" }
         Write-Host ("==> {0}（{1:N1} MB）" -f (Split-Path -Leaf $installerPath), ((Get-Item -LiteralPath $installerPath).Length / 1MB)) -ForegroundColor Green
