@@ -1,5 +1,6 @@
 using PerfScope.Core.Models;
 using PerfScope.Core.Settings;
+using PerfScope.Core.Text;
 
 namespace PerfScope.Core.Insights;
 
@@ -228,8 +229,8 @@ public sealed class SessionAnalytics
                 PeakCpuPercent = Math.Round(episode.PeakCpu, 2),
                 SampleCount = episode.Samples,
                 Note = kind == InsightKinds.SystemCpuEpisode
-                    ? "整机 CPU 持续高于阈值，建议看看 Top 应用是不是某个应用在满载"
-                    : "可用内存持续低于阈值，注意是否存在内存泄漏或缓存膨胀",
+                    ? CoreText.T("整机 CPU 持续高于阈值，建议看看 Top 应用是不是某个应用在满载")
+                    : CoreText.T("可用内存持续低于阈值，注意是否存在内存泄漏或缓存膨胀"),
             });
         }
 
@@ -366,7 +367,7 @@ public sealed class SessionAnalytics
                 PeakMemoryMb = Math.Round(episode.PeakMemory, 1),
                 ProcessCount = episode.PeakProcesses,
                 SampleCount = episode.Samples,
-                Note = "该应用持续占用较高 CPU，可结合时间点判断是前台交互还是后台任务",
+                Note = CoreText.T("该应用持续占用较高 CPU，可结合时间点判断是前台交互还是后台任务"),
             });
         }
 
@@ -392,7 +393,7 @@ public sealed class SessionAnalytics
             AvgCpuPercent = Math.Round(episode.SumCpu / episode.Samples, 2),
             PeakCpuPercent = Math.Round(episode.PeakCpu, 2),
             SampleCount = episode.Samples,
-            Note = "长时间持续高负载，已按 15 分钟分段记录",
+            Note = CoreText.T("长时间持续高负载，已按 15 分钟分段记录"),
         });
     }
 
@@ -475,7 +476,7 @@ public sealed class SessionAnalytics
                 GrowthMbPerMinute = Math.Round(state.GrowthSlope, 1),
                 ProcessCount = state.GrowthPeakProcesses,
                 SampleCount = state.MemoryCount,
-                Note = "内存持续增长，可能是缓存累积或泄漏；可对比同时段是否有大量文件/网络操作",
+                Note = CoreText.T("内存持续增长，可能是缓存累积或泄漏；可对比同时段是否有大量文件/网络操作"),
             });
         }
 

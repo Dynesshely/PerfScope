@@ -203,6 +203,14 @@ public sealed class AppRowViewModel : ObservableObject
     /// <summary>子进程是否可展开。</summary>
     public bool HasChildren => ProcessCount > 0;
 
+    /// <summary>屏幕阅读器读到的行名称。</summary>
+    public string AccessibilityName => DisplayName;
+
+    /// <summary>屏幕阅读器读到的行摘要：把各列数值合成一句话（WPF 的列不会自动暴露给 UIA）。</summary>
+    public string AccessibilitySummary
+        => DisplayName + " · CPU " + CpuText + " · " + Localization.Loc.T("内存") + " " + MemoryText
+           + " · " + Localization.Loc.T("进程") + " " + ProcessCountText + " · IO " + IoText;
+
     /// <summary>悬停提示：归并依据 + 根目录 + 进程数。</summary>
     public string ToolTipText
     {
@@ -275,5 +283,7 @@ public sealed class AppRowViewModel : ObservableObject
 
         OnPropertyChanged(nameof(HasChildren));
         OnPropertyChanged(nameof(RowHeight));
+        OnPropertyChanged(nameof(AccessibilityName));
+        OnPropertyChanged(nameof(AccessibilitySummary));
     }
 }

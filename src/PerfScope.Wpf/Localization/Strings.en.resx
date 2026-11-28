@@ -697,4 +697,664 @@
   <data name="打开周报失败" xml:space="preserve">
     <value>Failed to open the weekly report</value>
   </data>
+  <data name="# PerfScope 资源分析报告 · " xml:space="preserve">
+    <value># PerfScope Resource Report · </value>
+  </data>
+  <data name="&gt; 生成时间：" xml:space="preserve">
+    <value>&gt; Generated: </value>
+  </data>
+  <data name="## 一、总体" xml:space="preserve">
+    <value>## 1. Overview</value>
+  </data>
+  <data name="| 指标 | 数值 |" xml:space="preserve">
+    <value>| Metric | Value |</value>
+  </data>
+  <data name="| 整机 CPU 平均 | " xml:space="preserve">
+    <value>| System CPU avg | </value>
+  </data>
+  <data name="| 整机 CPU 峰值 | " xml:space="preserve">
+    <value>| System CPU peak | </value>
+  </data>
+  <data name="| 内存占用平均 | " xml:space="preserve">
+    <value>| Memory avg | </value>
+  </data>
+  <data name="| 可用内存最低 | " xml:space="preserve">
+    <value>| Min available memory | </value>
+  </data>
+  <data name="| 采样帧数 | " xml:space="preserve">
+    <value>| Samples | </value>
+  </data>
+  <data name="| 采样间隔 | " xml:space="preserve">
+    <value>| Sample interval | </value>
+  </data>
+  <data name="  秒 |" xml:space="preserve">
+    <value> s |</value>
+  </data>
+  <data name="| 物理内存 | " xml:space="preserve">
+    <value>| Physical memory | </value>
+  </data>
+  <data name="## 二、应用排行（按 CPU 时间）" xml:space="preserve">
+    <value>## 2. Applications (by CPU time)</value>
+  </data>
+  <data name="| # | 应用 | CPU 时间 | 平均 CPU | 峰值 CPU | 峰值内存 | 有数据分钟 |" xml:space="preserve">
+    <value>| # | Application | CPU time | Avg CPU | Peak CPU | Peak memory | Minutes with data |</value>
+  </data>
+  <data name="## 三、值得关注的事件" xml:space="preserve">
+    <value>## 3. Notable events</value>
+  </data>
+  <data name="_这一天没有触发任何阈值事件（CPU 片段 / 内存增长 / 系统高负载）。_" xml:space="preserve">
+    <value>_No threshold events were triggered today (CPU episodes / memory growth / system load)._</value>
+  </data>
+  <data name="| 时间 | 类型 | 对象 | 持续 | 均值 | 峰值 | 说明 |" xml:space="preserve">
+    <value>| Time | Kind | Target | Duration | Avg | Peak | Note |</value>
+  </data>
+  <data name="整机" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="## 四、结论与线索" xml:space="preserve">
+    <value>## 4. Findings and leads</value>
+  </data>
+  <data name="## 五、给 AI 的提问建议" xml:space="preserve">
+    <value>## 5. Suggested questions for the AI</value>
+  </data>
+  <data name="- 哪个应用在哪个时间段出现 CPU 尖峰？是固定周期（定时任务）还是持续增长？" xml:space="preserve">
+    <value>- Which application spikes, and when? Is it periodic (scheduled tasks) or steadily growing?</value>
+  </data>
+  <data name="- 内存持续增长的应用，增长速率与峰值是多少？是否伴随进程数增加（可能是子进程泄漏）？" xml:space="preserve">
+    <value>- For apps whose memory keeps growing, what are the growth rate and peak? Does the process count grow too (possible child-process leak)?</value>
+  </data>
+  <data name="- 整机高负载时段与哪个应用的片段重合？能否排除后台索引 / 编译 / 容器？" xml:space="preserve">
+    <value>- Which application episodes overlap the system's heavy-load periods? Can background indexing / builds / containers be ruled out?</value>
+  </data>
+  <data name="## 六、口径与数据说明" xml:space="preserve">
+    <value>## 6. Definitions and data notes</value>
+  </data>
+  <data name="- 百分比均为**整机口径**（0~100，等于任务管理器 CPU 列）；内存单位 MB / GB（1 MB = 1024 x 1024 字节）。" xml:space="preserve">
+    <value>- All percentages use the **machine-wide** scale (0-100, same as Task Manager's CPU column); memory is in MB / GB (1 MB = 1024 x 1024 bytes).</value>
+  </data>
+  <data name="- 应用已按「版本信息 + 安装目录 + 系统功能模块」归并：WSL、图形、内核、安全等系统模块与普通应用同样统计。" xml:space="preserve">
+    <value>- Applications are merged by version info + install root + system feature module: WSL, graphics, kernel and security modules are counted like any other app.</value>
+  </data>
+  <data name="- 数据来源：分钟级聚合 history/days/yyyy-MM-dd.bin + 事件流 insights/yyyy-MM-dd.jsonl；报告不含原始采样，体积小，适合直接交给模型。" xml:space="preserve">
+    <value>- Data sources: per-minute aggregates in history/days/yyyy-MM-dd.bin plus the event stream insights/yyyy-MM-dd.jsonl. The report holds no raw samples, stays small, and is ready to hand to a model.</value>
+  </data>
+  <data name="CPU 消耗最多：**" xml:space="preserve">
+    <value>Top CPU consumer: **</value>
+  </data>
+  <data name="**，累计 " xml:space="preserve">
+    <value>**, total </value>
+  </data>
+  <data name=" 秒（平均 " xml:space="preserve">
+    <value> s (avg </value>
+  </data>
+  <data name="内存峰值最高：**" xml:space="preserve">
+    <value>Highest memory peak: **</value>
+  </data>
+  <data name="**，峰值 " xml:space="preserve">
+    <value>**, peak </value>
+  </data>
+  <data name="检测到 " xml:space="preserve">
+    <value>Detected </value>
+  </data>
+  <data name=" 次内存持续增长，最快的是 **" xml:space="preserve">
+    <value> sustained memory-growth episodes, fastest is **</value>
+  </data>
+  <data name="**（约 " xml:space="preserve">
+    <value>** (about </value>
+  </data>
+  <data name=" MB/分钟，持续 " xml:space="preserve">
+    <value> MB/min, lasting </value>
+  </data>
+  <data name=" 分钟）。" xml:space="preserve">
+    <value> min).</value>
+  </data>
+  <data name="共 " xml:space="preserve">
+    <value>Total </value>
+  </data>
+  <data name=" 段 CPU 高占用片段，最重的一段来自 **" xml:space="preserve">
+    <value> heavy CPU episodes, the heaviest from **</value>
+  </data>
+  <data name=" 起，持续 " xml:space="preserve">
+    <value> starting </value>
+  </data>
+  <data name=" 分钟，均值 " xml:space="preserve">
+    <value> min, avg </value>
+  </data>
+  <data name="整机 CPU 有 " xml:space="preserve">
+    <value>System CPU had </value>
+  </data>
+  <data name=" 次持续高负载（阈值以上），建议对照同时段的应用片段。" xml:space="preserve">
+    <value> sustained high-load periods above the threshold; compare them with the app episodes in the same window.</value>
+  </data>
+  <data name="出现 " xml:space="preserve">
+    <value>Saw </value>
+  </data>
+  <data name=" 次内存压力（可用内存低于阈值），注意常驻应用的内存增长趋势。" xml:space="preserve">
+    <value> memory-pressure periods (available memory below threshold); watch the resident apps' memory trend.</value>
+  </data>
+  <data name="整机 CPU 平均 " xml:space="preserve">
+    <value>System CPU averaged </value>
+  </data>
+  <data name="%、峰值 " xml:space="preserve">
+    <value>%, peaking at </value>
+  </data>
+  <data name="%；若峰值远高于均值，说明存在短时突发负载。" xml:space="preserve">
+    <value>%; a peak far above the average indicates short bursts.</value>
+  </data>
+  <data name="CPU 高占用" xml:space="preserve">
+    <value>CPU episode</value>
+  </data>
+  <data name="内存增长" xml:space="preserve">
+    <value>Memory growth</value>
+  </data>
+  <data name="系统高负载" xml:space="preserve">
+    <value>System high load</value>
+  </data>
+  <data name="内存压力" xml:space="preserve">
+    <value>Memory pressure</value>
+  </data>
+  <data name=" 秒" xml:space="preserve">
+    <value> s</value>
+  </data>
+  <data name="未知" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="你是一名 Windows 资源占用分析助手。下面是一台真实机器上由 PerfScope 采集并整理的监控数据，" xml:space="preserve">
+    <value>You are a Windows resource-usage analysis assistant. Below is monitoring data collected and summarized by PerfScope on a real machine.</value>
+  </data>
+  <data name="请基于这些**本地文件**分析资源占用情况，找出异常、可疑增长点和可优化项。" xml:space="preserve">
+    <value>Analyze resource usage from these **local files**, then point out anomalies, suspicious growth and optimisation opportunities.</value>
+  </data>
+  <data name="## 数据文件（本机绝对路径，可直接读取）" xml:space="preserve">
+    <value>## Data files (absolute local paths, readable as-is)</value>
+  </data>
+  <data name="- 分析报告（结论型，建议先读）：" xml:space="preserve">
+    <value>- Analysis report (conclusions first, read this first): </value>
+  </data>
+  <data name="  同内容的 Markdown 版：" xml:space="preserve">
+    <value>  Same content as Markdown: </value>
+  </data>
+  <data name="- 原始事件流（JSONL，每行一个事件）：" xml:space="preserve">
+    <value>- Raw event stream (JSONL, one event per line): </value>
+  </data>
+  <data name="- 分析目录（含 latest-report.*）：" xml:space="preserve">
+    <value>- Analysis directory (contains latest-report.*): </value>
+  </data>
+  <data name="## 数据口径（务必遵守，否则结论会错）" xml:space="preserve">
+    <value>## Definitions (follow them, or the conclusions will be wrong)</value>
+  </data>
+  <data name="- 采集日期：" xml:space="preserve">
+    <value>- Collection date: </value>
+  </data>
+  <data name="；采样间隔约 " xml:space="preserve">
+    <value>; sample interval about </value>
+  </data>
+  <data name="；物理内存 " xml:space="preserve">
+    <value>; physical memory </value>
+  </data>
+  <data name="- 所有百分比都是**整机口径**（0~100，与任务管理器一致），不是单核口径；内存单位是 MB。" xml:space="preserve">
+    <value>- All percentages use the **machine-wide** scale (0-100, same as Task Manager), not per-core; memory is in MB.</value>
+  </data>
+  <data name="- 报告 schema：perfscope.report/v1。主要字段：" xml:space="preserve">
+    <value>- Report schema: perfscope.report/v1. Main fields:</value>
+  </data>
+  <data name="  - apps[]：name、cpuSeconds（CPU 秒累计）、cpuAvgPercent、cpuPeakPercent、memoryPeakMb、minutes" xml:space="preserve">
+    <value>  - apps[]: name, cpuSeconds (cumulative CPU seconds), cpuAvgPercent, cpuPeakPercent, memoryPeakMb, minutes</value>
+  </data>
+  <data name="  - findings[]：PerfScope 已经算好的结论，可作为线索，但请自行验证一致性。" xml:space="preserve">
+    <value>  - findings[]: conclusions PerfScope already computed; treat them as leads but verify consistency yourself.</value>
+  </data>
+  <data name="- events[].kind 取值：" xml:space="preserve">
+    <value>- events[].kind values:</value>
+  </data>
+  <data name="  - app_cpu_episode：某应用 CPU 持续高于阈值的一段（含均值/峰值/进程数）" xml:space="preserve">
+    <value>  - app_cpu_episode: a stretch where one app's CPU stayed above threshold (avg / peak / process count)</value>
+  </data>
+  <data name="  - app_memory_growth：某应用内存持续增长的一段（growthMbPerMinute 是拟合斜率）" xml:space="preserve">
+    <value>  - app_memory_growth: sustained memory growth for one app (growthMbPerMinute is the fitted slope)</value>
+  </data>
+  <data name="  - system_cpu_episode：整机 CPU 持续高负载" xml:space="preserve">
+    <value>  - system_cpu_episode: sustained machine-wide CPU load</value>
+  </data>
+  <data name="  - system_memory_pressure：可用内存持续偏低" xml:space="preserve">
+    <value>  - system_memory_pressure: available memory stayed low</value>
+  </data>
+  <data name="  - digest：5 分钟窗口摘要，apps[] 是该窗口内的 Top 应用" xml:space="preserve">
+    <value>  - digest: 5-minute window summary; apps[] are the top apps in that window</value>
+  </data>
+  <data name="- 应用已按「版本信息 + 安装目录 + 系统功能模块」归并：WSL、图形驱动、内核、安全等系统模块也在 apps 里，" xml:space="preserve">
+    <value>- Apps are merged by version info + install root + system feature module: WSL, graphics drivers, kernel and security modules also appear in apps,</value>
+  </data>
+  <data name="  名字是中文模块名（如「WSL 子系统」「内核与系统核心」），不是单个进程。" xml:space="preserve">
+    <value>  named after system modules (localized), not individual processes.</value>
+  </data>
+  <data name="## 本次数据概览" xml:space="preserve">
+    <value>## This dataset at a glance</value>
+  </data>
+  <data name="- 应用条目：" xml:space="preserve">
+    <value>- Applications: </value>
+  </data>
+  <data name=" 个" xml:space="preserve">
+    <value> apps</value>
+  </data>
+  <data name="- 事件条数：" xml:space="preserve">
+    <value>- Events: </value>
+  </data>
+  <data name="  条（其中窗口摘要 " xml:space="preserve">
+    <value> (of which </value>
+  </data>
+  <data name="  条）" xml:space="preserve">
+    <value> are window summaries)</value>
+  </data>
+  <data name="- PerfScope 自动结论：" xml:space="preserve">
+    <value>- Automatic conclusions from PerfScope:</value>
+  </data>
+  <data name="## 请输出" xml:space="preserve">
+    <value>## Please output</value>
+  </data>
+  <data name="1. 总体判断：3~5 条，按重要性排序，先说结论。" xml:space="preserve">
+    <value>1. Overall verdict: 3-5 points, most important first, conclusion first.</value>
+  </data>
+  <data name="2. 异常与可疑项：每条都必须给出证据（应用名 + 时间点 + 具体数值），并说明为什么可疑。" xml:space="preserve">
+    <value>2. Anomalies and suspicious items: every item needs evidence (app name + timestamp + concrete numbers) and why it is suspicious.</value>
+  </data>
+  <data name="3. 可能原因与验证方法：需要补充采集什么数据、怎么复现或排除。" xml:space="preserve">
+    <value>3. Possible causes and how to verify: what extra data to collect, how to reproduce or rule out.</value>
+  </data>
+  <data name="4. 优化建议：区分「立刻可做」与「需要长期观察」，标明预期收益和风险。" xml:space="preserve">
+    <value>4. Optimisation suggestions: separate quick wins from long-term observation, and state expected benefit and risk.</value>
+  </data>
+  <data name="5. 数据局限：哪些结论受采样间隔、归并口径或可见进程范围限制。" xml:space="preserve">
+    <value>5. Data limits: which conclusions are constrained by sample interval, grouping rules or process visibility.</value>
+  </data>
+  <data name="要求：只基于给定数据推断，不要编造应用名或数值；不确定就明确说不确定；用简体中文回答，表格优先。" xml:space="preserve">
+    <value>Requirements: infer only from the given data; never invent app names or numbers; state uncertainty explicitly; answer in the user's language and prefer tables.</value>
+  </data>
+  <data name="整机 CPU 持续高于阈值，建议看看 Top 应用是不是某个应用在满载" xml:space="preserve">
+    <value>System CPU stayed above the threshold; check whether one of the top apps is saturating the machine</value>
+  </data>
+  <data name="可用内存持续低于阈值，注意是否存在内存泄漏或缓存膨胀" xml:space="preserve">
+    <value>Available memory stayed below the threshold; check for a memory leak or cache bloat</value>
+  </data>
+  <data name="该应用持续占用较高 CPU，可结合时间点判断是前台交互还是后台任务" xml:space="preserve">
+    <value>This app kept using significant CPU; use the timestamps to tell foreground interaction from background work</value>
+  </data>
+  <data name="长时间持续高负载，已按 15 分钟分段记录" xml:space="preserve">
+    <value>Sustained heavy load for a long time; recorded in 15-minute segments</value>
+  </data>
+  <data name="内存持续增长，可能是缓存累积或泄漏；可对比同时段是否有大量文件/网络操作" xml:space="preserve">
+    <value>Memory kept growing, possibly cache accumulation or a leak; compare with file/network heavy activity in the same window</value>
+  </data>
+  <data name="暂无数据" xml:space="preserve">
+    <value>No data</value>
+  </data>
+  <data name="把几百个 Windows 进程归并成「应用」，让你看到是哪个应用在吃 CPU / 内存，而不是哪个 PID。" xml:space="preserve">
+    <value>Merges hundreds of Windows processes into applications, so you see which app is using CPU / memory instead of which PID.</value>
+  </data>
+  <data name="轻量 · 常驻 · 离线 · 零遥测 · 无需安装运行时" xml:space="preserve">
+    <value>Lightweight · always-on · offline · zero telemetry · no runtime to install</value>
+  </data>
+  <data name="技术栈：.NET 10 + WPF（MVVM），零第三方 NuGet" xml:space="preserve">
+    <value>Stack: .NET 10 + WPF (MVVM), zero third-party NuGet packages</value>
+  </data>
+  <data name="许可：MIT" xml:space="preserve">
+    <value>License: MIT</value>
+  </data>
+  <data name="仓库：github.com/Dynesshely/PerfScope" xml:space="preserve">
+    <value>Repository: github.com/Dynesshely/PerfScope</value>
+  </data>
+  <data name="打开 GitHub" xml:space="preserve">
+    <value>Open GitHub</value>
+  </data>
+  <data name="把这份 Prompt 交给任意 AI Agent，它就能读到今天的真实监控数据。" xml:space="preserve">
+    <value>Hand this prompt to any AI agent and it can read today's real monitoring data.</value>
+  </data>
+  <data name="生成后会同时刷新 analysis/ 下的日报（Markdown + JSON）；Prompt 里只包含本地路径与已算好的结论，不含任何网络上传。" xml:space="preserve">
+    <value>Generating also refreshes today's report under analysis/ (Markdown + JSON). The prompt contains only local paths and computed conclusions; nothing is uploaded.</value>
+  </data>
+  <data name="重新生成" xml:space="preserve">
+    <value>Regenerate</value>
+  </data>
+  <data name="复制到剪贴板" xml:space="preserve">
+    <value>Copy to clipboard</value>
+  </data>
+  <data name="累计 CPU" xml:space="preserve">
+    <value>Total CPU</value>
+  </data>
+  <data name="生成周报" xml:space="preserve">
+    <value>Weekly report</value>
+  </data>
+  <data name="打开分析目录" xml:space="preserve">
+    <value>Open analysis folder</value>
+  </data>
+  <data name="进程 / 应用" xml:space="preserve">
+    <value>Processes / apps</value>
+  </data>
+  <data name="暂停 / 继续监控（F6）" xml:space="preserve">
+    <value>Pause / resume monitoring (F6)</value>
+  </data>
+  <data name="立即采样（F5）" xml:space="preserve">
+    <value>Sample now (F5)</value>
+  </data>
+  <data name="显示 / 隐藏分布视图（Ctrl+Shift+D）" xml:space="preserve">
+    <value>Show / hide distribution view (Ctrl+Shift+D)</value>
+  </data>
+  <data name="历史（Ctrl+H）" xml:space="preserve">
+    <value>History (Ctrl+H)</value>
+  </data>
+  <data name="接入 Agent（Ctrl+Shift+A）" xml:space="preserve">
+    <value>Connect an agent (Ctrl+Shift+A)</value>
+  </data>
+  <data name="设置（Ctrl+,）" xml:space="preserve">
+    <value>Settings (Ctrl+,)</value>
+  </data>
+  <data name="关于" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="快速上手" xml:space="preserve">
+    <value>Quick start</value>
+  </data>
+  <data name="三件事，三十秒上手" xml:space="preserve">
+    <value>Three things, thirty seconds</value>
+  </data>
+  <data name="PerfScope 按「应用」而不是「进程」统计占用，下面三点点开看看。" xml:space="preserve">
+    <value>PerfScope measures usage per application, not per process. Here are three things worth knowing.</value>
+  </data>
+  <data name="① 应用 vs 进程" xml:space="preserve">
+    <value>1. Applications vs processes</value>
+  </data>
+  <data name="浏览器、Electron 应用会拆成几十个进程，这里合并成一行；点行首的箭头可以展开看子进程。" xml:space="preserve">
+    <value>Browsers and Electron apps split into dozens of processes; here they merge into one row. Use the arrow at the left to expand the child processes.</value>
+  </data>
+  <data name="② 悬停看依据" xml:space="preserve">
+    <value>2. Hover for the grouping reason</value>
+  </data>
+  <data name="把鼠标停在一行上，会告诉你这个应用是按什么规则归并出来的（产品名 / 安装根目录 / 系统模块…），这就是可解释性。" xml:space="preserve">
+    <value>Hover a row to see which rule grouped those processes (product name / install root / system module …). That is the explainability part.</value>
+  </data>
+  <data name="③ 历史与 AI 交接" xml:space="preserve">
+    <value>3. History and AI hand-off</value>
+  </data>
+  <data name="「历史」看按天聚合的用量，「接入 Agent」一键生成可交给任意 AI 的 Prompt，让它读你本机的真实数据。" xml:space="preserve">
+    <value>History shows per-day totals; Connect an agent generates a prompt you can hand to any AI so it reads your real local data.</value>
+  </data>
+  <data name="此引导只显示一次，之后可从「设置 → 界面」重新打开。" xml:space="preserve">
+    <value>This introduction is shown once; reopen it from Settings → Interface.</value>
+  </data>
+  <data name="采样与刷新" xml:space="preserve">
+    <value>Sampling &amp; refresh</value>
+  </data>
+  <data name="采样间隔（毫秒，500~10000）" xml:space="preserve">
+    <value>Sample interval (ms, 500-10000)</value>
+  </data>
+  <data name="界面刷新间隔（毫秒，250~10000）" xml:space="preserve">
+    <value>UI refresh interval (ms, 250-10000)</value>
+  </data>
+  <data name="平滑窗口（采样点数，1~15）" xml:space="preserve">
+    <value>Smoothing window (samples, 1-15)</value>
+  </data>
+  <data name="隐藏时的采样间隔（毫秒）" xml:space="preserve">
+    <value>Sample interval while hidden (ms)</value>
+  </data>
+  <data name="CPU 百分比口径" xml:space="preserve">
+    <value>CPU percentage scale</value>
+  </data>
+  <data name="界面语言（切换后重启生效）" xml:space="preserve">
+    <value>Language (takes effect after restart)</value>
+  </data>
+  <data name="列表显示行数（5~200）" xml:space="preserve">
+    <value>Rows in the list (5-200)</value>
+  </data>
+  <data name="在状态栏显示自身开销" xml:space="preserve">
+    <value>Show PerfScope's own overhead in the status bar</value>
+  </data>
+  <data name="在列表中显示 Windows 系统进程组" xml:space="preserve">
+    <value>Show the Windows system process group in the list</value>
+  </data>
+  <data name="归并规则" xml:space="preserve">
+    <value>Grouping rules</value>
+  </data>
+  <data name="按版本信息（ProductName + CompanyName）归并" xml:space="preserve">
+    <value>Group by version info (ProductName + CompanyName)</value>
+  </data>
+  <data name="按安装根目录归并（Program Files 等）" xml:space="preserve">
+    <value>Group by install root (Program Files, …)</value>
+  </data>
+  <data name="子进程继承父进程的应用归属" xml:space="preserve">
+    <value>Let child processes inherit their parent's application</value>
+  </data>
+  <data name="把 Windows 系统进程合并为单独一组" xml:space="preserve">
+    <value>Merge Windows system processes into one group</value>
+  </data>
+  <data name="缓存 exe 版本信息（降低自身开销）" xml:space="preserve">
+    <value>Cache executable version info (lowers own overhead)</value>
+  </data>
+  <data name="兜底分组名" xml:space="preserve">
+    <value>Fallback group name</value>
+  </data>
+  <data name="系统进程组名" xml:space="preserve">
+    <value>System process group name</value>
+  </data>
+  <data name="自定义规则（自上而下优先匹配）" xml:space="preserve">
+    <value>Custom rules (matched top-down)</value>
+  </data>
+  <data name="规则编辑" xml:space="preserve">
+    <value>Rule editor</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="匹配" xml:space="preserve">
+    <value>Match</value>
+  </data>
+  <data name="模式" xml:space="preserve">
+    <value>Pattern</value>
+  </data>
+  <data name="动作" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="目标名" xml:space="preserve">
+    <value>Target name</value>
+  </data>
+  <data name="把历史写入磁盘" xml:space="preserve">
+    <value>Write history to disk</value>
+  </data>
+  <data name="内存保留分钟数（5~1440）" xml:space="preserve">
+    <value>In-memory retention (minutes, 5-1440)</value>
+  </data>
+  <data name="磁盘保留天数（0~365，0 = 不落盘）" xml:space="preserve">
+    <value>Disk retention (days, 0-365; 0 = keep nothing)</value>
+  </data>
+  <data name="趋势曲线应用数（1~64）" xml:space="preserve">
+    <value>Apps tracked in trend curves (1-64)</value>
+  </data>
+  <data name="启用阈值告警（托盘气泡）" xml:space="preserve">
+    <value>Enable threshold alerts (tray balloon)</value>
+  </data>
+  <data name="整机 CPU 阈值（%）" xml:space="preserve">
+    <value>System CPU threshold (%)</value>
+  </data>
+  <data name="整机内存阈值（%）" xml:space="preserve">
+    <value>System memory threshold (%)</value>
+  </data>
+  <data name="单应用 CPU 阈值（%，0 = 关闭）" xml:space="preserve">
+    <value>Per-app CPU threshold (%, 0 = off)</value>
+  </data>
+  <data name="同一告警最小间隔（秒）" xml:space="preserve">
+    <value>Minimum interval between alerts (seconds)</value>
+  </data>
+  <data name="智能分析" xml:space="preserve">
+    <value>Insights</value>
+  </data>
+  <data name="持续产出分析历史（事件流 / 日报 / 周报）" xml:space="preserve">
+    <value>Keep producing analysis history (event stream / daily / weekly)</value>
+  </data>
+  <data name="应用 CPU 片段阈值（%）" xml:space="preserve">
+    <value>App CPU episode threshold (%)</value>
+  </data>
+  <data name="应用片段最短持续（秒）" xml:space="preserve">
+    <value>Minimum app episode duration (seconds)</value>
+  </data>
+  <data name="内存增长阈值（MB/分钟）" xml:space="preserve">
+    <value>Memory growth threshold (MB/min)</value>
+  </data>
+  <data name="整机高负载阈值（%）" xml:space="preserve">
+    <value>System high-load threshold (%)</value>
+  </data>
+  <data name="系统片段最短持续（秒）" xml:space="preserve">
+    <value>Minimum system episode duration (seconds)</value>
+  </data>
+  <data name="低内存阈值（可用 %）" xml:space="preserve">
+    <value>Low-memory threshold (available %)</value>
+  </data>
+  <data name="日志级别" xml:space="preserve">
+    <value>Log level</value>
+  </data>
+  <data name="日志文件上限（KB，64~10240）" xml:space="preserve">
+    <value>Log file size limit (KB, 64-10240)</value>
+  </data>
+  <data name="启动时自动检查更新（唯一的网络访问）" xml:space="preserve">
+    <value>Check for updates at startup (the only network access)</value>
+  </data>
+  <data name="开机自动启动（计划任务，保持管理员权限）" xml:space="preserve">
+    <value>Start with Windows (scheduled task, keeps admin rights)</value>
+  </data>
+  <data name="导出脱敏诊断包" xml:space="preserve">
+    <value>Export redacted diagnostic bundle</value>
+  </data>
+  <data name="最小化" xml:space="preserve">
+    <value>Minimize</value>
+  </data>
+  <data name="最大化" xml:space="preserve">
+    <value>Maximize</value>
+  </data>
+  <data name="发现新版本" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="PerfScope {0} 已发布，当前版本 {1}。" xml:space="preserve">
+    <value>PerfScope {0} has been released; you are on {1}.</value>
+  </data>
+  <data name="整机 CPU 高负载" xml:space="preserve">
+    <value>High system CPU usage</value>
+  </data>
+  <data name="当前 {0}%，超过设定阈值 {1}%。" xml:space="preserve">
+    <value>Now {0}%, above the configured threshold of {1}%.</value>
+  </data>
+  <data name="内存占用偏高" xml:space="preserve">
+    <value>High memory usage</value>
+  </data>
+  <data name="应用 CPU 占用偏高" xml:space="preserve">
+    <value>High application CPU usage</value>
+  </data>
+  <data name="{0} 当前 {1}%，超过设定阈值 {2}%。" xml:space="preserve">
+    <value>{0} is at {1}%, above the configured threshold of {2}%.</value>
+  </data>
+  <data name="保存设置失败" xml:space="preserve">
+    <value>Failed to save settings</value>
+  </data>
+  <data name="开机自启" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="已暂停监控" xml:space="preserve">
+    <value>Monitoring paused</value>
+  </data>
+  <data name="已继续监控" xml:space="preserve">
+    <value>Monitoring resumed</value>
+  </data>
+  <data name="设置已保存" xml:space="preserve">
+    <value>Settings saved</value>
+  </data>
+  <data name="采样间隔 {0} 秒" xml:space="preserve">
+    <value>Sample interval {0} s</value>
+  </data>
+  <data name="路径不可用（权限不足）" xml:space="preserve">
+    <value>Path unavailable (insufficient permissions)</value>
+  </data>
+  <data name="归并依据" xml:space="preserve">
+    <value>Grouped by</value>
+  </data>
+  <data name="整机百分比（与任务管理器一致）" xml:space="preserve">
+    <value>Machine-wide (same as Task Manager)</value>
+  </data>
+  <data name="单核百分比（可超过 100%）" xml:space="preserve">
+    <value>Per-core (can exceed 100%)</value>
+  </data>
+  <data name="工作集" xml:space="preserve">
+    <value>Working set</value>
+  </data>
+  <data name="私有字节" xml:space="preserve">
+    <value>Private bytes</value>
+  </data>
+  <data name="直接退出" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="仅错误" xml:space="preserve">
+    <value>Errors only</value>
+  </data>
+  <data name="警告及以上" xml:space="preserve">
+    <value>Warnings and above</value>
+  </data>
+  <data name="信息及以上" xml:space="preserve">
+    <value>Info and above</value>
+  </data>
+  <data name="调试（最详细）" xml:space="preserve">
+    <value>Debug (most verbose)</value>
+  </data>
+  <data name="映像名" xml:space="preserve">
+    <value>Image name</value>
+  </data>
+  <data name="路径包含" xml:space="preserve">
+    <value>Path contains</value>
+  </data>
+  <data name="产品名" xml:space="preserve">
+    <value>Product name</value>
+  </data>
+  <data name="合并到指定应用" xml:space="preserve">
+    <value>Merge into an app</value>
+  </data>
+  <data name="仅重命名" xml:space="preserve">
+    <value>Rename only</value>
+  </data>
+  <data name="排除" xml:space="preserve">
+    <value>Exclude</value>
+  </data>
+  <data name="已恢复默认值，点「保存」后生效" xml:space="preserve">
+    <value>Defaults restored; click Save to apply</value>
+  </data>
+  <data name="自定义分组" xml:space="preserve">
+    <value>Custom group</value>
+  </data>
+  <data name="导出诊断包失败" xml:space="preserve">
+    <value>Failed to export the diagnostic bundle</value>
+  </data>
+  <data name="诊断包已导出" xml:space="preserve">
+    <value>Diagnostic bundle exported</value>
+  </data>
+  <data name="合并到" xml:space="preserve">
+    <value>Merge to</value>
+  </data>
+  <data name="重命名为" xml:space="preserve">
+    <value>Rename to</value>
+  </data>
+  <data name="停用" xml:space="preserve">
+    <value>disabled</value>
+  </data>
+  <data name="生成失败" xml:space="preserve">
+    <value>Generation failed</value>
+  </data>
+  <data name="已复制" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="还没有落盘的历史：确认「历史」里已开启写磁盘，并等几分钟。" xml:space="preserve">
+    <value>No history on disk yet. Make sure disk history is enabled in Settings → History, then wait a few minutes.</value>
+  </data>
+  <data name="{0}：{1} 个应用" xml:space="preserve">
+    <value>{0}: {1} applications</value>
+  </data>
+  <data name="生成周报失败（可能没有足够的历史数据）" xml:space="preserve">
+    <value>Failed to generate the weekly report (probably not enough history).</value>
+  </data>
+  <data name="周报已生成" xml:space="preserve">
+    <value>Weekly report generated</value>
+  </data>
 </root>

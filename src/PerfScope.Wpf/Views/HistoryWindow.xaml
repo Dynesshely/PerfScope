@@ -2,7 +2,8 @@
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                       xmlns:chrome="clr-namespace:PerfScope.App.Chrome"
-                      Title="历史" Height="640" Width="880"
+                      xmlns:loc="clr-namespace:PerfScope.App.Localization"
+                      Title="{loc:Loc '历史'}" Height="640" Width="880"
                       WindowStartupLocation="CenterOwner"
                       Icon="pack://application:,,,/Assets/app.ico">
     <Grid Margin="16,12,16,12">
@@ -29,11 +30,11 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="100"/><ColumnDefinition Width="110"/><ColumnDefinition Width="80"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="应用" Style="{StaticResource MutedText}"/>
-                        <TextBlock Grid.Column="1" Text="累计 CPU" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="2" Text="峰值 CPU" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="3" Text="峰值内存" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="4" Text="采样点" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
+                        <TextBlock Text="{loc:Loc '应用'}" Style="{StaticResource MutedText}"/>
+                        <TextBlock Grid.Column="1" Text="{loc:Loc '累计 CPU'}" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="2" Text="{loc:Loc '峰值 CPU'}" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="3" Text="{loc:Loc '峰值内存'}" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="4" Text="{loc:Loc '采样点'}" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
                     </Grid>
                     <ListBox Grid.Row="1" ItemsSource="{Binding Rows}" Background="Transparent" BorderThickness="0"
                              VirtualizingPanel.IsVirtualizing="True">
@@ -66,10 +67,10 @@
             <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMuted}" FontSize="11.5"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Style="{StaticResource SecondaryButton}" Content="刷新" Command="{Binding RefreshCommand}"/>
-                <Button Style="{StaticResource SecondaryButton}" Content="生成周报" Margin="8,0,0,0" Command="{Binding WriteWeeklyReportCommand}"/>
-                <Button Style="{StaticResource SecondaryButton}" Content="打开分析目录" Margin="8,0,0,0" Command="{Binding OpenAnalysisFolderCommand}"/>
-                <Button Style="{StaticResource PrimaryButton}" Content="关闭" Margin="8,0,0,0" Click="OnCloseClick"/>
+                <Button Style="{StaticResource SecondaryButton}" Content="{loc:Loc '刷新'}" Command="{Binding RefreshCommand}"/>
+                <Button Style="{StaticResource SecondaryButton}" Content="{loc:Loc '生成周报'}" Margin="8,0,0,0" Command="{Binding WriteWeeklyReportCommand}"/>
+                <Button Style="{StaticResource SecondaryButton}" Content="{loc:Loc '打开分析目录'}" Margin="8,0,0,0" Command="{Binding OpenAnalysisFolderCommand}"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="{loc:Loc '关闭'}" Margin="8,0,0,0" Click="OnCloseClick"/>
             </StackPanel>
         </Grid>
     </Grid>

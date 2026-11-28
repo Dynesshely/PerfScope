@@ -75,6 +75,10 @@ public sealed class ProcessRowViewModel : ObservableObject
         ? Localization.Loc.T("路径不可用（权限不足）")
         : ExecutablePath!;
 
+    /// <summary>屏幕阅读器读到的子进程摘要。</summary>
+    public string AccessibilitySummary
+        => Name + " · PID " + Pid + " · CPU " + CpuText + " · " + Localization.Loc.T("内存") + " " + MemoryText;
+
     /// <summary>悬停提示：完整路径 + PID。</summary>
     public string ToolTipText => Name + "  ·  PID " + Pid + Environment.NewLine + PathText;
 
@@ -87,5 +91,6 @@ public sealed class ProcessRowViewModel : ObservableObject
         CpuPercent = info.CpuPercent;
         WorkingSetBytes = info.WorkingSetBytes;
         OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(AccessibilitySummary));
     }
 }

@@ -2,9 +2,10 @@
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                       xmlns:chrome="clr-namespace:PerfScope.App.Chrome"
+                      xmlns:loc="clr-namespace:PerfScope.App.Localization"
                       xmlns:vm="clr-namespace:PerfScope.App.ViewModels"
                       xmlns:controls="clr-namespace:PerfScope.App.Controls"
-                      Title="PerfScope — 应用级 CPU / 内存监控"
+                      Title="{loc:Loc 'PerfScope — 应用级 CPU / 内存监控'}"
                       Height="820" Width="1320" MinWidth="960" MinHeight="560"
                       WindowStartupLocation="CenterScreen"
                       Icon="pack://application:,,,/Assets/app.ico"
@@ -31,7 +32,7 @@
             <Border Background="{DynamicResource Danger}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
                     VerticalAlignment="Center"
                     Visibility="{Binding IsPermissionLimited, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="权限受限" FontSize="10.5" Foreground="#FFFFFF"/>
+                <TextBlock Text="{loc:Loc '权限受限'}" FontSize="10.5" Foreground="#FFFFFF"/>
             </Border>
         </StackPanel>
     </chrome:ChromeWindow.HeaderContent>
@@ -55,7 +56,7 @@
 
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
                 <StackPanel>
-                    <TextBlock Text="整机 CPU" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{loc:Loc '整机 CPU'}" Style="{StaticResource MutedText}"/>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding SystemCpuText}" FontSize="{DynamicResource BigNumberFontSize}"
                                    FontWeight="Bold" Foreground="{DynamicResource CpuLine}" Margin="0,2,0,0"
@@ -68,7 +69,7 @@
 
             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0">
                 <StackPanel>
-                    <TextBlock Text="内存" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{loc:Loc '内存'}" Style="{StaticResource MutedText}"/>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding SystemMemoryText}" FontSize="{DynamicResource BigNumberFontSize}"
                                    FontWeight="Bold" Foreground="{DynamicResource MemoryLine}" Margin="0,2,0,0"
@@ -82,7 +83,7 @@
 
             <Border Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,0">
                 <StackPanel>
-                    <TextBlock Text="进程 / 应用" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{loc:Loc '进程 / 应用'}" Style="{StaticResource MutedText}"/>
                     <TextBlock Text="{Binding ProcessCountText}" FontSize="{DynamicResource BigNumberFontSize}"
                                FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,2,0,0"/>
                     <TextBlock Text="{Binding IntervalText}" Style="{StaticResource MutedText}" Margin="0,2,0,0"/>
@@ -109,7 +110,7 @@
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Style="{StaticResource ToolButton}" Command="{Binding TogglePauseCommand}"
-                            ToolTip="暂停 / 继续监控（F6）">
+                            ToolTip="{loc:Loc '暂停 / 继续监控（F6）'}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding PauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="11"
                                        VerticalAlignment="Center"/>
@@ -117,31 +118,31 @@
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource ToolButton}" Command="{Binding RefreshNowCommand}"
-                            ToolTip="立即采样（F5）">
+                            ToolTip="{loc:Loc '立即采样（F5）'}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center"/>
-                            <TextBlock Text="刷新" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Loc '刷新'}" Margin="7,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Border Width="1" Background="{DynamicResource Border}" Margin="6,6"/>
                     <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleTreemapCommand}"
-                            ToolTip="显示 / 隐藏分布视图（Ctrl+Shift+D）">
-                        <TextBlock Text="分布视图"/>
+                            ToolTip="{loc:Loc '显示 / 隐藏分布视图（Ctrl+Shift+D）'}">
+                        <TextBlock Text="{loc:Loc '分布视图'}"/>
                     </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenHistoryCommand}" ToolTip="历史（Ctrl+H）">
-                        <TextBlock Text="历史"/>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenHistoryCommand}" ToolTip="{loc:Loc '历史（Ctrl+H）'}">
+                        <TextBlock Text="{loc:Loc '历史'}"/>
                     </Button>
-                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenAgentCommand}" ToolTip="接入 Agent（Ctrl+Shift+A）">
-                        <TextBlock Text="接入 Agent"/>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenAgentCommand}" ToolTip="{loc:Loc '接入 Agent（Ctrl+Shift+A）'}">
+                        <TextBlock Text="{loc:Loc '接入 Agent'}"/>
                     </Button>
-                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenSettingsCommand}" ToolTip="设置（Ctrl+,）">
-                        <TextBlock Text="设置"/>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenSettingsCommand}" ToolTip="{loc:Loc '设置（Ctrl+,）'}">
+                        <TextBlock Text="{loc:Loc '设置'}"/>
                     </Button>
-                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenAboutCommand}" ToolTip="关于">
-                        <TextBlock Text="关于"/>
+                    <Button Style="{StaticResource ToolButton}" Command="{Binding OpenAboutCommand}" ToolTip="{loc:Loc '关于'}">
+                        <TextBlock Text="{loc:Loc '关于'}"/>
                     </Button>
                 </StackPanel>
             </Grid>
@@ -193,6 +194,7 @@
                     </Border>
 
                     <ListBox Grid.Row="1" Style="{StaticResource AppListBox}" Margin="0,2,0,0"
+                             AutomationProperties.Name="{loc:Loc '应用列表'}"
                              ItemsSource="{Binding Apps}"
                              ItemContainerStyle="{StaticResource AppListBoxItem}"
                              ScrollViewer.CanContentScroll="True">
@@ -239,7 +241,9 @@
                                                   Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="{x:Type vm:ProcessRowViewModel}">
-                                                <Grid Height="22" Margin="0,0,8,0" ToolTip="{Binding ToolTipText}">
+                                                <Grid Height="22" Margin="0,0,8,0" ToolTip="{Binding ToolTipText}"
+                                                      AutomationProperties.Name="{Binding Name}"
+                                                      AutomationProperties.HelpText="{Binding AccessibilitySummary}">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="88"/>
@@ -269,7 +273,7 @@
                     </ListBox>
 
                     <!-- 空状态 -->
-                    <TextBlock Grid.Row="1" Text="正在等待第一帧采样数据…" HorizontalAlignment="Center"
+                    <TextBlock Grid.Row="1" Text="{loc:Loc '正在等待第一帧采样数据…'}" HorizontalAlignment="Center"
                                VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"
                                Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"/>
                 </Grid>
@@ -286,9 +290,9 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0" Margin="0,0,0,8">
-                        <TextBlock Text="分布视图" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{loc:Loc '分布视图'}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <ToggleButton Style="{StaticResource SegmentToggle}" Content="内存"
+                            <ToggleButton Style="{StaticResource SegmentToggle}" Content="{loc:Loc '内存'}"
                                           IsChecked="{Binding IsMemoryTab, Mode=OneWay}"
                                           Command="{Binding ShowMemoryTabCommand}"/>
                             <ToggleButton Style="{StaticResource SegmentToggle}" Content="CPU" Margin="4,0,0,0"

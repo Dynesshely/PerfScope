@@ -2,37 +2,38 @@
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                       xmlns:chrome="clr-namespace:PerfScope.App.Chrome"
-                      Title="快速上手" Height="520" Width="640"
+                      xmlns:loc="clr-namespace:PerfScope.App.Localization"
+                      Title="{loc:Loc '快速上手'}" Height="520" Width="640"
                       WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
                       Icon="pack://application:,,,/Assets/app.ico">
     <Grid Margin="22,18,22,16">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="三件事，三十秒上手" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Text="PerfScope 按「应用」而不是「进程」统计占用，下面三点点开看看。" FontSize="12.5"
+            <TextBlock Text="{loc:Loc '三件事，三十秒上手'}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="{loc:Loc 'PerfScope 按「应用」而不是「进程」统计占用，下面三点点开看看。'}" FontSize="12.5"
                        Foreground="{DynamicResource TextMuted}" Margin="0,6,0,0"/>
         </StackPanel>
 
         <StackPanel Grid.Row="1">
             <Border Style="{StaticResource Card}" Margin="0,0,0,10">
                 <StackPanel>
-                    <TextBlock Text="① 应用 vs 进程" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
-                    <TextBlock Text="浏览器、Electron 应用会拆成几十个进程，这里合并成一行；点行首的箭头可以展开看子进程。"
+                    <TextBlock Text="{loc:Loc '① 应用 vs 进程'}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
+                    <TextBlock Text="{loc:Loc '浏览器、Electron 应用会拆成几十个进程，这里合并成一行；点行首的箭头可以展开看子进程。'}"
                                Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource Card}" Margin="0,0,0,10">
                 <StackPanel>
-                    <TextBlock Text="② 悬停看依据" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
-                    <TextBlock Text="把鼠标停在一行上，会告诉你这个应用是按什么规则归并出来的（产品名 / 安装根目录 / 系统模块…），这就是可解释性。"
+                    <TextBlock Text="{loc:Loc '② 悬停看依据'}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
+                    <TextBlock Text="{loc:Loc '把鼠标停在一行上，会告诉你这个应用是按什么规则归并出来的（产品名 / 安装根目录 / 系统模块…），这就是可解释性。'}"
                                Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="③ 历史与 AI 交接" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
-                    <TextBlock Text="「历史」看按天聚合的用量，「接入 Agent」一键生成可交给任意 AI 的 Prompt，让它读你本机的真实数据。"
+                    <TextBlock Text="{loc:Loc '③ 历史与 AI 交接'}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
+                    <TextBlock Text="{loc:Loc '「历史」看按天聚合的用量，「接入 Agent」一键生成可交给任意 AI 的 Prompt，让它读你本机的真实数据。'}"
                                Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
@@ -40,10 +41,10 @@
 
         <Grid Grid.Row="2" Margin="0,14,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="此引导只显示一次，之后可从「设置 → 界面」重新打开。" VerticalAlignment="Center"
+            <TextBlock Grid.Column="0" Text="{loc:Loc '此引导只显示一次，之后可从「设置 → 界面」重新打开。'}" VerticalAlignment="Center"
                        Foreground="{DynamicResource TextMuted}" FontSize="11"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Style="{StaticResource PrimaryButton}" Content="开始使用" Click="OnCloseClick"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="{loc:Loc '开始使用'}" Click="OnCloseClick"/>
             </StackPanel>
         </Grid>
     </Grid>

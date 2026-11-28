@@ -5,6 +5,7 @@ using PerfScope.Core.Abstractions;
 using PerfScope.Core.Insights;
 using PerfScope.Core.Models;
 using PerfScope.Core.Settings;
+using PerfScope.Core.Text;
 
 namespace PerfScope.App;
 
@@ -112,6 +113,7 @@ public sealed class AppHost : IDisposable
         {
             // 演示 / 截图模式没有配置文件，语言用命令行覆盖值（--lang en 之类），默认跟随系统
             Localization.Loc.Apply(languageOverride ?? Localization.Loc.System);
+            CoreText.SetTranslator(Localization.Loc.T);
 
             var demoSettings = new AppSettings();
             IMonitorEngine demoEngine = mock ? new MockEngine(demoSettings) : new DemoEngine(demoSettings);
@@ -128,6 +130,7 @@ public sealed class AppHost : IDisposable
 
         // 语言必须在任何 UI 构造前确定（文案在构造时求值）
         Localization.Loc.Apply(languageOverride ?? settings.Language);
+        CoreText.SetTranslator(Localization.Loc.T);
         ILog log = CoreRuntime.CreateLogger(settings);
         ISettingsStore settingsStore = CoreRuntime.CreateSettingsStore(log);
         IMonitorEngine engine = CoreRuntime.CreateEngine(settings, log);

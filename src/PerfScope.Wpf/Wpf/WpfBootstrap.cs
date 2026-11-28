@@ -92,8 +92,12 @@ internal static class WpfBootstrap
         {
             shell.Start();
             _ = notifications.StartAsync();
-            ShowStartupDialogs(host, dialogs);
         }
+
+        // 提示类窗口要等消息循环跑起来再弹（在 Run 之前 ShowDialog 会缺少 dispatcher 上下文）
+        app.Dispatcher.BeginInvoke(
+            new Action(() => ShowStartupDialogs(host, dialogs, demo)),
+            System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
         if (options.SelfTestSeconds > 0)
         {
@@ -113,9 +117,10 @@ internal static class WpfBootstrap
     }
 
     /// <summary>启动后的提示类窗口：首次引导、设置页、接入 Agent（后两者供截图与自测用）。</summary>
-    private static void ShowStartupDialogs(AppHost host, IDialogService dialogs)
+    private static void ShowStartupDialogs(AppHost host, IDialogService dialogs, bool isDemo)
     {
-        if (!host.Settings.FirstRunTipsShown || UiDebug.ShowFirstRunTips)
+        // 演示 / 截图模式不自动弹首次引导，只能靠 --tips-demo 显式触发
+        if ((!isDemo && !host.Settings.FirstRunTipsShown) || UiDebug.ShowFirstRunTips)
         {
             dialogs.ShowFirstRunTips();
         }

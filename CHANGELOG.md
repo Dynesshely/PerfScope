@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **界面文案全部走本地化**：XAML 里的中文改用 {loc:Loc '原文'} 标记扩展求值，
+  Strings.en.resx 补齐界面与报表两套英文条目；Core 层新增 CoreText（可注入翻译器，
+  默认恒等），日报 / 周报 / Agent Prompt / 事件说明在英文界面下输出英文。
 - **GUI 层整体重写为 WPF + MVVM**：外壳换成自绘标题栏的 WPF 窗口壳（保留系统原生最小化/最大化动画与
   Win11 Snap Layouts），界面全部改为数据绑定驱动 —— 视图不再持有业务状态，主列表、分布视图、趋势图
   的数据装配都在 ViewModel 里完成。WinForms 工程与全部自绘控件代码已删除。
@@ -27,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **UIA 行级数值**：应用行的 CPU / 内存 / 进程数 / IO 合成一句摘要暴露给屏幕阅读器（AccessibilitySummary）。
 - **趋势图悬停坐标轴**：顶部 CPU / 内存卡片内嵌折线图，鼠标悬停显示该点数值（`--hover-demo` 可强制显示）。
 - 主界面列头可点击切换排序（CPU / 内存 / 应用名 / 进程数 / IO），排序状态记入 `ui.json`。
 

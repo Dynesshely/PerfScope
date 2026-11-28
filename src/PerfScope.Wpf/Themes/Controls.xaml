@@ -268,6 +268,9 @@
     </Style>
 
     <Style x:Key="AppListBoxItem" TargetType="ListBoxItem">
+        <!-- UIA：每行把名称与各列数值合成一句话，屏幕阅读器才读得到 CPU / 内存 / 进程数 -->
+        <Setter Property="AutomationProperties.Name" Value="{Binding AccessibilityName}"/>
+        <Setter Property="AutomationProperties.HelpText" Value="{Binding AccessibilitySummary}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Padding" Value="0"/>

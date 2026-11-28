@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using PerfScope.Core.Abstractions;
 using PerfScope.Core.Models;
+using PerfScope.Core.Text;
 
 namespace PerfScope.Core.Insights;
 
@@ -124,37 +125,37 @@ public static class ReportBuilder
     public static string ToMarkdown(InsightReport report)
     {
         var builder = new StringBuilder(4096);
-        builder.AppendLine("# PerfScope 资源分析报告 · " + report.Date.ToString("yyyy-MM-dd"));
+        builder.AppendLine(CoreText.T("# PerfScope 资源分析报告 · ") + report.Date.ToString("yyyy-MM-dd"));
         builder.AppendLine();
-        builder.AppendLine("> 生成时间：" + report.GeneratedUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") + " · schema " + report.Schema);
+        builder.AppendLine(CoreText.T("> 生成时间：") + report.GeneratedUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") + " · schema " + report.Schema);
         builder.AppendLine();
 
-        builder.AppendLine("## 一、总体");
+        builder.AppendLine(CoreText.T("## 一、总体"));
         builder.AppendLine();
-        builder.AppendLine("| 指标 | 数值 |");
+        builder.AppendLine(CoreText.T("| 指标 | 数值 |"));
         builder.AppendLine("|---|---|");
-        builder.AppendLine("| 整机 CPU 平均 | " + report.System.CpuAvgPercent.ToString("F1") + "% |");
-        builder.AppendLine("| 整机 CPU 峰值 | " + report.System.CpuPeakPercent.ToString("F1") + "% |");
-        builder.AppendLine("| 内存占用平均 | " + report.System.MemoryAvgPercent.ToString("F1") + "% |");
+        builder.AppendLine(CoreText.T("| 整机 CPU 平均 | ") + report.System.CpuAvgPercent.ToString("F1") + "% |");
+        builder.AppendLine(CoreText.T("| 整机 CPU 峰值 | ") + report.System.CpuPeakPercent.ToString("F1") + "% |");
+        builder.AppendLine(CoreText.T("| 内存占用平均 | ") + report.System.MemoryAvgPercent.ToString("F1") + "% |");
         string availableText = report.System.MinAvailableMb > 0
             ? (report.System.MinAvailableMb / 1024.0).ToString("F1") + " GB"
             : "—";
-        builder.AppendLine("| 可用内存最低 | " + availableText + " |");
-        builder.AppendLine("| 采样帧数 | " + report.System.Samples + " |");
+        builder.AppendLine(CoreText.T("| 可用内存最低 | ") + availableText + " |");
+        builder.AppendLine(CoreText.T("| 采样帧数 | ") + report.System.Samples + " |");
         if (report.System.SampleIntervalSeconds > 0)
         {
-            builder.AppendLine("| 采样间隔 | " + report.System.SampleIntervalSeconds.ToString("F1") + " 秒 |");
+            builder.AppendLine(CoreText.T("| 采样间隔 | ") + report.System.SampleIntervalSeconds.ToString("F1") + CoreText.T(" 秒 |"));
         }
 
         if (report.System.TotalPhysicalMb > 0)
         {
-            builder.AppendLine("| 物理内存 | " + (report.System.TotalPhysicalMb / 1024.0).ToString("F1") + " GB |");
+            builder.AppendLine(CoreText.T("| 物理内存 | ") + (report.System.TotalPhysicalMb / 1024.0).ToString("F1") + " GB |");
         }
         builder.AppendLine();
 
-        builder.AppendLine("## 二、应用排行（按 CPU 时间）");
+        builder.AppendLine(CoreText.T("## 二、应用排行（按 CPU 时间）"));
         builder.AppendLine();
-        builder.AppendLine("| # | 应用 | CPU 时间 | 平均 CPU | 峰值 CPU | 峰值内存 | 有数据分钟 |");
+        builder.AppendLine(CoreText.T("| # | 应用 | CPU 时间 | 平均 CPU | 峰值 CPU | 峰值内存 | 有数据分钟 |"));
         builder.AppendLine("|---|---|---|---|---|---|---|");
         int index = 0;
         foreach (var app in report.Apps.Take(15))
@@ -166,7 +167,7 @@ public static class ReportBuilder
         }
 
         builder.AppendLine();
-        builder.AppendLine("## 三、值得关注的事件");
+        builder.AppendLine(CoreText.T("## 三、值得关注的事件"));
         builder.AppendLine();
         var notable = report.Events
             .Where(e => e.Kind != InsightKinds.Digest && e.Kind != InsightKinds.SessionStart)
@@ -176,23 +177,23 @@ public static class ReportBuilder
 
         if (notable.Length == 0)
         {
-            builder.AppendLine("_这一天没有触发任何阈值事件（CPU 片段 / 内存增长 / 系统高负载）。_");
+            builder.AppendLine(CoreText.T("_这一天没有触发任何阈值事件（CPU 片段 / 内存增长 / 系统高负载）。_"));
         }
         else
         {
-            builder.AppendLine("| 时间 | 类型 | 对象 | 持续 | 均值 | 峰值 | 说明 |");
+            builder.AppendLine(CoreText.T("| 时间 | 类型 | 对象 | 持续 | 均值 | 峰值 | 说明 |"));
             builder.AppendLine("|---|---|---|---|---|---|---|");
             foreach (var item in notable)
             {
                 string start = item.StartUtc.HasValue ? item.StartUtc.Value.ToLocalTime().ToString("HH:mm:ss") : "--";
-                builder.AppendLine("| " + start + " | " + KindText(item.Kind) + " | " + Escape(item.AppName ?? "整机") + " | " +
+                builder.AppendLine("| " + start + " | " + KindText(item.Kind) + " | " + Escape(item.AppName ?? CoreText.T("整机")) + " | " +
                                    item.DurationSeconds.ToString("F0") + "s | " + item.AvgCpuPercent.ToString("F1") + "% | " +
                                    item.PeakCpuPercent.ToString("F1") + "% | " + Escape(item.Note ?? string.Empty) + " |");
             }
         }
 
         builder.AppendLine();
-        builder.AppendLine("## 四、结论与线索");
+        builder.AppendLine(CoreText.T("## 四、结论与线索"));
         builder.AppendLine();
         foreach (var finding in report.Findings)
         {
@@ -200,17 +201,17 @@ public static class ReportBuilder
         }
 
         builder.AppendLine();
-        builder.AppendLine("## 五、给 AI 的提问建议");
+        builder.AppendLine(CoreText.T("## 五、给 AI 的提问建议"));
         builder.AppendLine();
-        builder.AppendLine("- 哪个应用在哪个时间段出现 CPU 尖峰？是固定周期（定时任务）还是持续增长？");
-        builder.AppendLine("- 内存持续增长的应用，增长速率与峰值是多少？是否伴随进程数增加（可能是子进程泄漏）？");
-        builder.AppendLine("- 整机高负载时段与哪个应用的片段重合？能否排除后台索引 / 编译 / 容器？");
+        builder.AppendLine(CoreText.T("- 哪个应用在哪个时间段出现 CPU 尖峰？是固定周期（定时任务）还是持续增长？"));
+        builder.AppendLine(CoreText.T("- 内存持续增长的应用，增长速率与峰值是多少？是否伴随进程数增加（可能是子进程泄漏）？"));
+        builder.AppendLine(CoreText.T("- 整机高负载时段与哪个应用的片段重合？能否排除后台索引 / 编译 / 容器？"));
         builder.AppendLine();
-        builder.AppendLine("## 六、口径与数据说明");
+        builder.AppendLine(CoreText.T("## 六、口径与数据说明"));
         builder.AppendLine();
-        builder.AppendLine("- 百分比均为**整机口径**（0~100，等于任务管理器 CPU 列）；内存单位 MB / GB（1 MB = 1024 x 1024 字节）。");
-        builder.AppendLine("- 应用已按「版本信息 + 安装目录 + 系统功能模块」归并：WSL、图形、内核、安全等系统模块与普通应用同样统计。");
-        builder.AppendLine("- 数据来源：分钟级聚合 history/days/yyyy-MM-dd.bin + 事件流 insights/yyyy-MM-dd.jsonl；报告不含原始采样，体积小，适合直接交给模型。");
+        builder.AppendLine(CoreText.T("- 百分比均为**整机口径**（0~100，等于任务管理器 CPU 列）；内存单位 MB / GB（1 MB = 1024 x 1024 字节）。"));
+        builder.AppendLine(CoreText.T("- 应用已按「版本信息 + 安装目录 + 系统功能模块」归并：WSL、图形、内核、安全等系统模块与普通应用同样统计。"));
+        builder.AppendLine(CoreText.T("- 数据来源：分钟级聚合 history/days/yyyy-MM-dd.bin + 事件流 insights/yyyy-MM-dd.jsonl；报告不含原始采样，体积小，适合直接交给模型。"));
         return builder.ToString();
     }
 
@@ -243,23 +244,23 @@ public static class ReportBuilder
         if (apps.Count > 0)
         {
             var top = apps[0];
-            findings.Add("CPU 消耗最多：**" + top.Name + "**，累计 " + top.CpuSeconds.ToString("F0") + " 秒（平均 " +
+            findings.Add(CoreText.T("CPU 消耗最多：**") + top.Name + CoreText.T("**，累计 ") + top.CpuSeconds.ToString("F0") + CoreText.T(" 秒（平均 ") +
                          top.CpuAvgPercent.ToString("F2") + "%）。");
         }
 
         if (apps.Count > 0)
         {
             var memoryTop = apps.OrderByDescending(a => a.MemoryPeakMb).First();
-            findings.Add("内存峰值最高：**" + memoryTop.Name + "**，峰值 " + memoryTop.MemoryPeakMb.ToString("F0") + " MB。");
+            findings.Add(CoreText.T("内存峰值最高：**") + memoryTop.Name + CoreText.T("**，峰值 ") + memoryTop.MemoryPeakMb.ToString("F0") + " MB。");
         }
 
         var growths = events.Where(e => e.Kind == InsightKinds.AppMemoryGrowth).ToArray();
         if (growths.Length > 0)
         {
             var worst = growths.OrderByDescending(e => e.GrowthMbPerMinute).First();
-            findings.Add("检测到 " + growths.Length + " 次内存持续增长，最快的是 **" + worst.AppName + "**（约 " +
-                         worst.GrowthMbPerMinute.ToString("F0") + " MB/分钟，持续 " +
-                         (worst.DurationSeconds / 60).ToString("F0") + " 分钟）。");
+            findings.Add(CoreText.T("检测到 ") + growths.Length + CoreText.T(" 次内存持续增长，最快的是 **") + worst.AppName + CoreText.T("**（约 ") +
+                         worst.GrowthMbPerMinute.ToString("F0") + CoreText.T(" MB/分钟，持续 ") +
+                         (worst.DurationSeconds / 60).ToString("F0") + CoreText.T(" 分钟）。"));
         }
 
         var cpuEpisodes = events.Where(e => e.Kind == InsightKinds.AppCpuEpisode).ToArray();
@@ -267,35 +268,35 @@ public static class ReportBuilder
         {
             var busiest = cpuEpisodes.OrderByDescending(e => e.AvgCpuPercent).First();
             string start = busiest.StartUtc.HasValue ? busiest.StartUtc.Value.ToLocalTime().ToString("HH:mm") : "--";
-            findings.Add("共 " + cpuEpisodes.Length + " 段 CPU 高占用片段，最重的一段来自 **" + busiest.AppName + "**（" +
-                         start + " 起，持续 " + (busiest.DurationSeconds / 60).ToString("F1") + " 分钟，均值 " +
+            findings.Add(CoreText.T("共 ") + cpuEpisodes.Length + CoreText.T(" 段 CPU 高占用片段，最重的一段来自 **") + busiest.AppName + "**（" +
+                         start + CoreText.T(" 起，持续 ") + (busiest.DurationSeconds / 60).ToString("F1") + CoreText.T(" 分钟，均值 ") +
                          busiest.AvgCpuPercent.ToString("F1") + "%）。");
         }
 
         int systemEpisodes = events.Count(e => e.Kind == InsightKinds.SystemCpuEpisode);
         if (systemEpisodes > 0)
         {
-            findings.Add("整机 CPU 有 " + systemEpisodes + " 次持续高负载（阈值以上），建议对照同时段的应用片段。");
+            findings.Add(CoreText.T("整机 CPU 有 ") + systemEpisodes + CoreText.T(" 次持续高负载（阈值以上），建议对照同时段的应用片段。"));
         }
 
         int pressure = events.Count(e => e.Kind == InsightKinds.SystemMemoryPressure);
         if (pressure > 0)
         {
-            findings.Add("出现 " + pressure + " 次内存压力（可用内存低于阈值），注意常驻应用的内存增长趋势。");
+            findings.Add(CoreText.T("出现 ") + pressure + CoreText.T(" 次内存压力（可用内存低于阈值），注意常驻应用的内存增长趋势。"));
         }
 
-        findings.Add("整机 CPU 平均 " + system.CpuAvgPercent.ToString("F1") + "%、峰值 " +
-                     system.CpuPeakPercent.ToString("F1") + "%；若峰值远高于均值，说明存在短时突发负载。");
+        findings.Add(CoreText.T("整机 CPU 平均 ") + system.CpuAvgPercent.ToString("F1") + CoreText.T("%、峰值 ") +
+                     system.CpuPeakPercent.ToString("F1") + CoreText.T("%；若峰值远高于均值，说明存在短时突发负载。"));
 
         return findings;
     }
 
     private static string KindText(string kind) => kind switch
     {
-        InsightKinds.AppCpuEpisode => "CPU 高占用",
-        InsightKinds.AppMemoryGrowth => "内存增长",
-        InsightKinds.SystemCpuEpisode => "系统高负载",
-        InsightKinds.SystemMemoryPressure => "内存压力",
+        InsightKinds.AppCpuEpisode => CoreText.T("CPU 高占用"),
+        InsightKinds.AppMemoryGrowth => CoreText.T("内存增长"),
+        InsightKinds.SystemCpuEpisode => CoreText.T("系统高负载"),
+        InsightKinds.SystemMemoryPressure => CoreText.T("内存压力"),
         _ => kind,
     };
 

@@ -194,6 +194,23 @@ VSTest testhost 启动时打开父进程句柄会被拒绝（`Win32Exception (5)
 
 `global.json` 原本锁 `10.0.402`，某次环境更新后本机不再有该 SDK。现在写的是 `10.0.100-rc.1.25451.107` + `rollForward: latestMajor`。换机器时先 `dotnet --list-sdks` 对齐。
 
+### 7.13 文案分成三层，改文案时别放错层
+
+| 层 | 位置 | 机制 |
+|---|---|---|
+| XAML | Views/*.xaml | Text="{loc:Loc '中文原文'}"，加载时求值（语言切换需重启，与旧版一致） |
+| 代码 | ViewModel / Services | Loc.T("中文原文")，key 就是中文原文 |
+| Core | 报表 / Prompt / 事件说明 | CoreText.T("中文原文")，App 启动时注入 Loc.T，未注入时恒等返回中文 |
+
+新增任何面向用户的文案：先写中文原文，再往 Localization/Strings.en.resx 补一条同名 key。
+日志（ILog）保持中文，不做翻译 —— 它们是排障用的，不是界面。
+
+### 7.14 UIA 只有行级摘要，没有八列独立属性
+
+WPF 的 ListBox 默认只把「内容对象」暴露为 UIA 名称，自绘模板里的列值不会被自动读取。
+现在每行通过 AutomationProperties.Name（应用名）与 AutomationProperties.HelpText
+（AccessibilitySummary：CPU / 内存 / 进程数 / IO 一句话）暴露，屏幕阅读器能读到完整数据；
+如果以后要做逐列 UIA 属性，需要自定义 AutomationPeer，成本明显更高。
 ### 7.10 WPF 的 XAML 编译会生成一个临时工程（`_wpftmp`）
 
 `UseWPF` 的工程在编译 XAML 时会生成 `PerfScope.Wpf_<hash>_wpftmp.csproj` 再过一遍源码。

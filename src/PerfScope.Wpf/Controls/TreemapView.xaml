@@ -1,6 +1,7 @@
 <UserControl x:Class="PerfScope.App.Controls.TreemapView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:PerfScope.App.Localization"
              xmlns:vm="clr-namespace:PerfScope.App.ViewModels"
              Background="Transparent" ClipToBounds="True">
     <Grid x:Name="Host">
@@ -34,7 +35,7 @@
         </ItemsControl>
 
         <!-- 空状态 -->
-        <TextBlock Text="暂无数据" HorizontalAlignment="Center" VerticalAlignment="Center"
+        <TextBlock Text="{loc:Loc '暂无数据'}" HorizontalAlignment="Center" VerticalAlignment="Center"
                    Foreground="{DynamicResource TextMuted}" FontSize="12"
                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"/>
 
