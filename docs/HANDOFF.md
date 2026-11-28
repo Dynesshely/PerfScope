@@ -194,6 +194,61 @@ VSTest testhost 启动时打开父进程句柄会被拒绝（`Win32Exception (5)
 
 `global.json` 原本锁 `10.0.402`，某次环境更新后本机不再有该 SDK。现在写的是 `10.0.100-rc.1.25451.107` + `rollForward: latestMajor`。换机器时先 `dotnet --list-sdks` 对齐。
 
+### 7.9 发布流水线会被测试拦住
+
+tag 推送后 `release.yml` 会先跑测试。测试挂了就是发版失败（曾因周报测试断言与实现口径不一致触发过一次）。**发版前本地务必 `run-tests.ps1`**。
+
+---
+
+### 7.10 WPF 的 XAML 编译会生成一个临时工程（`_wpftmp`）
+
+`UseWPF` 的工程在编译 XAML 时会生成 `PerfScope.Wpf_<hash>_wpftmp.csproj` 再过一遍源码。
+**这个临时工程不继承 `Directory.Build.props` 里的一部分属性**（本机实测：`ImplicitUsings` 丢失），
+表现为「`dotnet build` 正常、但报 `当前上下文中不存在名称 Path`」这类莫名错误。
+
+修法：在 WPF 工程里放一份显式的 `GlobalUsings.cs`（本项目已有），不要依赖隐式 using。
+
+### 7.11 不要 Freeze 含 DynamicResource 画笔的 Pen
+
+`new Pen(brush, w).Freeze()` 在 `brush` 是从资源字典取来、本身未冻结时必抛
+`InvalidOperationException: 无法冻结此 Freezable`。这个异常在 `OnRender` 里抛出会被
+Dispatcher 每次重绘重复触发 —— 曾经一秒钟堆出 6 个模态对话框把界面锁死。
+现在 `App.xaml.cs` 对界面线程异常只弹一次提示，但仍然要在渲染代码里避免 Freeze。
+
+### 7.12 树图与列表必须用同一套内存口径
+
+旧 WinForms 版树图固定用工作集，而列表跟随 `MemoryMode`（工作集 / 私有字节），
+两处数字对不上是历史遗留问题。WPF 版已统一：`TreemapPanelViewModel.SetMemoryMode`
+由 `MainViewModel` 按设置同步。新增任何内存展示都要走同一口径。
+
+### 7.13 文案分成三层，改文案时别放错层
+
+| 层 | 位置 | 机制 |
+|---|---|---|
+| XAML | Views/*.xaml | Text="{loc:Loc '中文原文'}"，加载时求值（语言切换需重启，与旧版一致） |
+| 代码 | ViewModel / Services | Loc.T("中文原文")，key 就是中文原文 |
+| Core | 报表 / Prompt / 事件说明 | CoreText.T("中文原文")，App 启动时注入 Loc.T，未注入时恒等返回中文 |
+
+新增任何面向用户的文案：先写中文原文，再往 Localization/Strings.en.resx 补一条同名 key。
+日志（ILog）保持中文，不做翻译 —— 它们是排障用的，不是界面。
+
+### 7.14 UIA：行级摘要 + 原生 Selection 模式（已实测）
+
+WPF 的 ListBox 默认只把「内容对象」暴露为 UIA 名称，自绘模板里的列值不会被自动读取。
+现在的可访问性由两部分组成：
+
+| 能力 | 实现 |
+|---|---|
+| 行名称 | AutomationProperties.Name = 应用名 |
+| 行摘要 | AutomationProperties.HelpText = AccessibilitySummary（CPU / 内存 / 进程数 / IO 一句话） |
+| 选择模式 | ListBox 原生实现 SelectionPattern，每行 SelectionItemPattern（WPF 自带，无需自绘回调） |
+| 列表名称 | AutomationProperties.Name = 「应用列表」 |
+
+2026-11-28 用 UIAutomationClient 实测（--mock 实例）：列表 SelectionPattern 可用，
+16 个可见行均为 ListItem 且都提供 SelectionItemPattern；示例行 Name 为「Terra Game」，
+HelpText 为「Terra Game · CPU 7.6% · 内存 3.2 GB · 进程 4 · IO 7.0 MB/s / 736 KB/s」。
+旧版「自绘列表没有 UIA Selection 回调」的债在 WPF 下由原生控件模式直接消解，无需自己实现。
+
 ### 7.15 性能数字必须说清楚是「整机口径」还是「单核口径」
 
 这是本机踩过的坑：用 `Get-Process` 前后两次 `TotalProcessorTime` 相减算出来的百分比是
@@ -228,48 +283,6 @@ rowsMs 应该是 1~3 ms 量级。
 环境变量 `PERFSCOPE_DISABLE_UI` 接受逗号分隔的取值：`list`、`treemap`、`trend`、`hover`、
 `icons`、`nouia`、`norowheight`、`noprocess`。逐个关掉再测 CPU，可以快速定位是哪个组件在烧。
 另有 `PERFSCOPE_DIAG_ROWS=1` 打开行实例化/耗时日志。两者都不影响正常使用。
-### 7.13 文案分成三层，改文案时别放错层
-
-| 层 | 位置 | 机制 |
-|---|---|---|
-| XAML | Views/*.xaml | Text="{loc:Loc '中文原文'}"，加载时求值（语言切换需重启，与旧版一致） |
-| 代码 | ViewModel / Services | Loc.T("中文原文")，key 就是中文原文 |
-| Core | 报表 / Prompt / 事件说明 | CoreText.T("中文原文")，App 启动时注入 Loc.T，未注入时恒等返回中文 |
-
-新增任何面向用户的文案：先写中文原文，再往 Localization/Strings.en.resx 补一条同名 key。
-日志（ILog）保持中文，不做翻译 —— 它们是排障用的，不是界面。
-
-### 7.14 UIA 只有行级摘要，没有八列独立属性
-
-WPF 的 ListBox 默认只把「内容对象」暴露为 UIA 名称，自绘模板里的列值不会被自动读取。
-现在每行通过 AutomationProperties.Name（应用名）与 AutomationProperties.HelpText
-（AccessibilitySummary：CPU / 内存 / 进程数 / IO 一句话）暴露，屏幕阅读器能读到完整数据；
-如果以后要做逐列 UIA 属性，需要自定义 AutomationPeer，成本明显更高。
-### 7.10 WPF 的 XAML 编译会生成一个临时工程（`_wpftmp`）
-
-`UseWPF` 的工程在编译 XAML 时会生成 `PerfScope.Wpf_<hash>_wpftmp.csproj` 再过一遍源码。
-**这个临时工程不继承 `Directory.Build.props` 里的一部分属性**（本机实测：`ImplicitUsings` 丢失），
-表现为「`dotnet build` 正常、但报 `当前上下文中不存在名称 Path`」这类莫名错误。
-
-修法：在 WPF 工程里放一份显式的 `GlobalUsings.cs`（本项目已有），不要依赖隐式 using。
-
-### 7.11 不要 Freeze 含 DynamicResource 画笔的 Pen
-
-`new Pen(brush, w).Freeze()` 在 `brush` 是从资源字典取来、本身未冻结时必抛
-`InvalidOperationException: 无法冻结此 Freezable`。这个异常在 `OnRender` 里抛出会被
-Dispatcher 每次重绘重复触发 —— 曾经一秒钟堆出 6 个模态对话框把界面锁死。
-现在 `App.xaml.cs` 对界面线程异常只弹一次提示，但仍然要在渲染代码里避免 Freeze。
-
-### 7.12 树图与列表必须用同一套内存口径
-
-旧 WinForms 版树图固定用工作集，而列表跟随 `MemoryMode`（工作集 / 私有字节），
-两处数字对不上是历史遗留问题。WPF 版已统一：`TreemapPanelViewModel.SetMemoryMode`
-由 `MainViewModel` 按设置同步。新增任何内存展示都要走同一口径。
-### 7.9 发布流水线会被测试拦住
-
-tag 推送后 `release.yml` 会先跑测试。测试挂了就是发版失败（曾因周报测试断言与实现口径不一致触发过一次）。**发版前本地务必 `run-tests.ps1`**。
-
----
 
 ## 8. 发版流程
 
@@ -288,6 +301,10 @@ git tag v0.1.5; git push origin v0.1.5
 推送后 `.github/workflows/release.yml` 会：跑测试 → 构建单文件 portable zip → 用 NSIS 打安装包 → 生成 `SHA256SUMS.txt` → 创建 GitHub Release。
 
 **产物**：`PerfScope-<ver>-win-x64-portable.zip`、`PerfScope-Setup-<ver>-win-x64.exe`、`SHA256SUMS.txt`。
+
+安装包是**机器级安装**（admin 提权 + `$PROGRAMFILES64\PerfScope` + HKLM 注册 + 全用户开始菜单），
+与 winget 清单的 `Scope: machine` 一致；用户数据仍写在各自的 `%LOCALAPPDATA%\PerfScope`。
+卸载时会清理开机自启（计划任务 `PerfScope` 与 HKCU Run 项），免得多余自启项指向已删除的 exe。
 
 **代码签名**：暂无。安装包和 exe 都是未签名状态（这是已知的产品化缺口，见 §9）。
 
@@ -331,7 +348,7 @@ git tag v0.1.5; git push origin v0.1.5
 | P2 | **GPU 指标** | 需要 PDH（`\\GPU Engine(*)\\Utilization Percentage`）。`System.Diagnostics.PerformanceCounter` 要引 NuGet，破"零依赖"；纯 P/Invoke 代码量大。**需要单独立项决策**。 |
 | P2 | 告警规则化增强 | 现有：整机阈值 + 应用级 CPU 阈值气泡（按应用冷却）。可加：持续时长条件、写入事件流、托盘红点。 |
 | P3 | Store / MSIX 分发 | 低优先级。 |
-| — | 安装包 Scope | `installer/PerfScope.nsi` 已改 `RequestExecutionLevel admin`，但安装目录仍是 `%LOCALAPPDATA%\Programs`，与 admin 语义略有不一致，可在下一版一并调整。 |
+| — | ~~安装包 Scope~~ | 0.2.0 已完成：NSIS 改为机器级安装（`$PROGRAMFILES64\PerfScope`、HKLM 注册、全用户开始菜单、卸载时清理计划任务与 Run 项），与 `Scope: machine` 一致 |
 
 ### 已知限制（有意为之，不是 bug）
 

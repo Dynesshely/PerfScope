@@ -1,4 +1,4 @@
-; PerfScope 安装包脚本（NSIS 3）
+﻿; PerfScope 安装包脚本（NSIS 3）
 ;
 ; 构建：makensis /DAPP_VERSION=1.0.0 /DSOURCE_DIR=<publish 目录> /DOUTPUT_FILE=<输出 exe> installer\PerfScope.nsi
 
@@ -31,8 +31,10 @@ RequestExecutionLevel admin
 
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "${OUTPUT_FILE}"
-InstallDir "$LOCALAPPDATA\Programs\PerfScope"
-InstallDirRegKey HKCU "Software\PerfScope" "InstallDir"
+; 机器级安装：安装程序要求管理员权限，因此装到 Program Files 并用 HKLM 记录，
+; 与 winget 清单的 Scope: machine 语义一致（用户数据仍然留在各自的 %LOCALAPPDATA%\PerfScope）
+InstallDir "$PROGRAMFILES64\PerfScope"
+InstallDirRegKey HKLM "Software\PerfScope" "InstallDir"
 
 Icon "${ICON_FILE}"
 UninstallIcon "${ICON_FILE}"
@@ -65,6 +67,17 @@ VIAddVersionKey /LANG=2052 "ProductVersion" "${APP_VERSION}"
 !insertmacro MUI_LANGUAGE "SimpChinese"
 !insertmacro MUI_LANGUAGE "English"
 
+; 机器级安装：64 位注册表视图 + 全用户开始菜单
+Function .onInit
+  SetRegView 64
+  SetShellVarContext all
+FunctionEnd
+
+Function un.onInit
+  SetRegView 64
+  SetShellVarContext all
+FunctionEnd
+
 Section "PerfScope" SEC_MAIN
   SetOutPath "$INSTDIR"
 
@@ -75,22 +88,22 @@ Section "PerfScope" SEC_MAIN
   File /r "${SOURCE_DIR}\*.*"
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKCU "Software\PerfScope" "InstallDir" "$INSTDIR"
+  WriteRegStr HKLM "Software\PerfScope" "InstallDir" "$INSTDIR"
 
   ; 卸载信息（Windows「应用和功能」里可见）
-  WriteRegStr HKCU "${UNINST_KEY}" "DisplayName" "${APP_NAME}"
-  WriteRegStr HKCU "${UNINST_KEY}" "DisplayVersion" "${APP_VERSION}"
-  WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "${APP_PUBLISHER}"
-  WriteRegStr HKCU "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
-  WriteRegStr HKCU "${UNINST_KEY}" "URLInfoAbout" "${APP_URL}"
-  WriteRegStr HKCU "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "${UNINST_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
-  WriteRegDWORD HKCU "${UNINST_KEY}" "NoModify" 1
-  WriteRegDWORD HKCU "${UNINST_KEY}" "NoRepair" 1
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayName" "${APP_NAME}"
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayVersion" "${APP_VERSION}"
+  WriteRegStr HKLM "${UNINST_KEY}" "Publisher" "${APP_PUBLISHER}"
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
+  WriteRegStr HKLM "${UNINST_KEY}" "URLInfoAbout" "${APP_URL}"
+  WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKLM "${UNINST_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegDWORD HKLM "${UNINST_KEY}" "NoModify" 1
+  WriteRegDWORD HKLM "${UNINST_KEY}" "NoRepair" 1
 
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
   IntFmt $0 "0x%08X" $0
-  WriteRegDWORD HKCU "${UNINST_KEY}" "EstimatedSize" "$0"
+  WriteRegDWORD HKLM "${UNINST_KEY}" "EstimatedSize" "$0"
 
   CreateShortCut "$SMPROGRAMS\PerfScope.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
 SectionEnd
@@ -103,8 +116,13 @@ Section "Uninstall"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir /r "$INSTDIR"
 
-  DeleteRegKey HKCU "${UNINST_KEY}"
-  DeleteRegKey HKCU "Software\PerfScope"
+  DeleteRegKey HKLM "${UNINST_KEY}"
+  DeleteRegKey HKLM "Software\PerfScope"
+
+  ; 清理开机自启（计划任务优先，失败则删注册表 Run 项），否则会留下指向已删 exe 的自启项
+  nsExec::Exec 'schtasks /Delete /TN PerfScope /F'
+  Pop $0
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "PerfScope"
 
   MessageBox MB_YESNO|MB_ICONQUESTION "是否同时删除 PerfScope 的历史数据（$LOCALAPPDATA\PerfScope）？$\r$\n选择「否」将保留数据，便于重新安装后继续使用。" IDNO KeepData
   RMDir /r "$LOCALAPPDATA\PerfScope"

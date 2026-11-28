@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **安装包改为机器级安装**：装到 `%ProgramFiles%\PerfScope`，注册信息写 HKLM，开始菜单用全用户上下文，
+  与 `Scope: machine` 的 winget 清单一致；卸载时清理计划任务与 HKCU Run 里的自启项。
+- UIA 补齐并实测：列表提供原生 `SelectionPattern`、每行提供 `SelectionItemPattern`，
+  行名称 + HelpText 摘要（CPU / 内存 / 进程数 / IO）可被屏幕阅读器读取。
 - **分布视图的方块一律显示应用图标**：有标题时贴右下角（空间紧时缩到 13px），标题放不下时
   图标在块内居中并按块大小缩放，再小的块也能认出是哪个应用。
 - **内存占用优化**：折叠的应用不再逐帧刷新子进程行、每帧临时集合改为复用、工作集修剪
