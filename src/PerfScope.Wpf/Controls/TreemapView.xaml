@@ -19,9 +19,11 @@
             </ItemsControl.ItemContainerStyle>
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type vm:TreemapTileViewModel}">
-                    <Border Background="{Binding Fill}" CornerRadius="3" Width="{Binding Width}" Height="{Binding Height}"
+                    <Border Background="{Binding Fill}" CornerRadius="0" Width="{Binding Width}" Height="{Binding Height}"
                             Margin="1" ToolTip="{Binding ToolTipText}" SnapsToDevicePixels="True" ClipToBounds="True">
                         <Grid>
+                            <!-- 空闲 / 未归属块的点阵或斜纹纹理（应用块为 null，不渲染） -->
+                            <Rectangle Fill="{Binding Texture}" IsHitTestVisible="False"/>
                             <StackPanel Margin="7,4" VerticalAlignment="Top" HorizontalAlignment="Left">
                                 <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TreemapText}"
                                            FontSize="12" TextTrimming="CharacterEllipsis"

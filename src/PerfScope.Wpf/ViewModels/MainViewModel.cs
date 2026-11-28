@@ -440,7 +440,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (!UiDebug.DisableTreemap)
         {
             long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
-            Treemap.Update(frame.Apps);
+            Treemap.Update(frame.Apps, frame.TotalPhysicalBytes, frame.AvailablePhysicalBytes);
             System.Threading.Interlocked.Add(ref _diagTreemapTicks, System.Diagnostics.Stopwatch.GetTimestamp() - t1);
         }
     }

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **分布视图补上中性块**（与旧 WinForms 版一致）：内存视图加入「未归属（内核 / 缓存 / 共享）」
+  与「空闲内存」，CPU 视图加入「空闲 CPU」，整张图的面积口径分别等于物理内存总量与 100%；
+  工作集之和超过「在用内存」时应用块等比缩小，空闲块用点阵、未归属块用斜纹区分。
+- 分布视图的方块改为**直角**，不再有圆角。
 - **界面文案全部走本地化**：XAML 里的中文改用 {loc:Loc '原文'} 标记扩展求值，
   Strings.en.resx 补齐界面与报表两套英文条目；Core 层新增 CoreText（可注入翻译器，
   默认恒等），日报 / 周报 / Agent Prompt / 事件说明在英文界面下输出英文。
